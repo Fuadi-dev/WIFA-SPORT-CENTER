@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* Custom styles for the navbar and hero section */
+.navbar-transparent {
+    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+}
+
+.navbar-solid {
+    background: rgba(0,0,0,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Smooth transitions */
+* {
+    transition: all 0.3s ease;
+}
+
+/* Hero section overlay */
+.hero-overlay {
+    background: linear-gradient(45deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Button hover effects */
+.btn-hover {
+    transition: all 0.3s ease;
+    transform: translateY(0);
+}
+
+.btn-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* Card animations */
+.card-hover {
+    transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+/* Text glow effect */
+.text-glow {
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+/* Gradient backgrounds */
+.gradient-blue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-green {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-purple {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.gradient-red {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
