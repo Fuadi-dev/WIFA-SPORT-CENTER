@@ -7,6 +7,32 @@
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        /* Custom scrollbar for date selection */
+        .date-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .date-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        .date-scroll::-webkit-scrollbar-thumb {
+            background: #f59e0b;
+            border-radius: 10px;
+        }
+        .date-scroll::-webkit-scrollbar-thumb:hover {
+            background: #d97706;
+        }
+        
+        /* Scroll hint animation */
+        @keyframes scroll-hint {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+        }
+        .scroll-hint {
+            animation: scroll-hint 2s ease-in-out infinite;
+        }
+    </style>>
 </head>
 <body class="bg-gradient-to-br from-amber-50 to-orange-100 min-h-screen">
     
@@ -68,19 +94,31 @@
             <div class="bg-white rounded-xl shadow-lg p-8 mb-8 border-2 border-amber-100">
                 <h2 class="text-2xl font-bold text-amber-800 mb-6">
                     <i class="fas fa-calendar-alt mr-2"></i>Pilih Tanggal
+                    <span class="text-sm font-normal text-gray-600 ml-2">(Geser untuk melihat tanggal lainnya)</span>
                 </h2>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                    @foreach($dates as $date)
-                    <label class="date-option cursor-pointer">
-                        <input type="radio" name="date" value="{{ $date->format('Y-m-d') }}" class="hidden" required>
-                        <div class="date-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-4 text-center transition-all duration-300">
-                            <div class="font-semibold text-gray-700">{{ $date->format('D') }}</div>
-                            <div class="text-2xl font-bold text-amber-600">{{ $date->format('d') }}</div>
-                            <div class="text-sm text-gray-600">{{ $date->format('M') }}</div>
-                        </div>
-                    </label>
-                    @endforeach
+                <div class="overflow-x-auto date-scroll">
+                    <div class="flex gap-4 pb-4" style="min-width: max-content;">
+                        @foreach($dates as $date)
+                        <label class="date-option cursor-pointer flex-shrink-0">
+                            <input type="radio" name="date" value="{{ $date->format('Y-m-d') }}" class="hidden" required>
+                            <div class="date-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-4 text-center transition-all duration-300 w-20">
+                                <div class="font-semibold text-gray-700 text-xs">{{ $date->format('D') }}</div>
+                                <div class="text-2xl font-bold text-amber-600">{{ $date->format('d') }}</div>
+                                <div class="text-sm text-gray-600">{{ $date->format('M') }}</div>
+                                @if($date->isToday())
+                                    <div class="text-xs text-amber-600 font-semibold mt-1">Hari Ini</div>
+                                @endif
+                            </div>
+                        </label>
+                        @endforeach
+                    </div>
+                    <!-- Scroll indicator -->
+                    <div class="text-center mt-2">
+                        <i class="fas fa-chevron-left scroll-hint text-amber-500 text-xs"></i>
+                        <span class="text-xs text-gray-500 mx-2">Geser untuk melihat tanggal lainnya</span>
+                        <i class="fas fa-chevron-right scroll-hint text-amber-500 text-xs"></i>
+                    </div>
                 </div>
             </div>
 
@@ -97,6 +135,21 @@
                         <option value="1">1 Jam</option>
                         <option value="2">2 Jam</option>
                         <option value="3">3 Jam</option>
+                        <option value="4">4 Jam</option>
+                        <option value="5">5 Jam</option>
+                        <option value="6">6 Jam</option>
+                        <option value="7">7 Jam</option>
+                        <option value="8">8 Jam</option>
+                        <option value="9">9 Jam</option>
+                        <option value="10">10 Jam</option>
+                        <option value="11">11 Jam</option>
+                        <option value="12">12 Jam</option>
+                        <option value="13">13 Jam</option>
+                        <option value="14">14 Jam</option>
+                        <option value="15">15 Jam</option>
+                        <option value="16">16 Jam</option>
+                        <option value="17">17 Jam</option>
+                        <option value="18">18 Jam (Full Day)</option>
                     </select>
                 </div>
                 
@@ -227,7 +280,18 @@
             if (selectedTime) {
                 const startHour = parseInt(selectedTime.split(':')[0]);
                 const endHour = startHour + selectedDuration;
-                const endTime = endHour.toString().padStart(2, '0') + ':00';
+                
+                // Check if booking exceeds operating hours (24:00)
+                if (endHour > 24) {
+                    alert('Durasi booking melebihi jam operasional. Maksimal sampai jam 24:00 (12 malam).');
+                    // Reset duration to maximum possible
+                    const maxDuration = 24 - startHour;
+                    document.getElementById('duration').value = maxDuration;
+                    selectedDuration = maxDuration;
+                }
+                
+                const finalEndHour = Math.min(startHour + selectedDuration, 24);
+                const endTime = finalEndHour.toString().padStart(2, '0') + ':00';
                 document.getElementById('selectedTime').textContent = selectedTime + ' - ' + endTime;
                 
                 // Add hidden input for end_time
@@ -239,6 +303,37 @@
                     document.getElementById('scheduleForm').appendChild(endTimeInput);
                 }
                 endTimeInput.value = endTime;
+                
+                // Update duration selector options based on selected start time
+                updateDurationOptions();
+            }
+        }
+
+        function updateDurationOptions() {
+            if (selectedTime) {
+                const startHour = parseInt(selectedTime.split(':')[0]);
+                const maxDuration = 24 - startHour;
+                const durationSelect = document.getElementById('duration');
+                
+                // Update duration options based on available hours
+                for (let i = 1; i <= 18; i++) {
+                    const option = durationSelect.querySelector(`option[value="${i}"]`);
+                    if (option) {
+                        if (i <= maxDuration) {
+                            option.disabled = false;
+                            option.style.display = 'block';
+                        } else {
+                            option.disabled = true;
+                            option.style.display = 'none';
+                        }
+                    }
+                }
+                
+                // If current selection exceeds max, adjust it
+                if (selectedDuration > maxDuration) {
+                    selectedDuration = maxDuration;
+                    durationSelect.value = maxDuration;
+                }
             }
         }
 

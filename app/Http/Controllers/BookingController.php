@@ -39,9 +39,9 @@ class BookingController extends Controller
         $sport = Sport::findOrFail($sportId);
         $court = Court::findOrFail($courtId);
         
-        // Get the next 7 days
+        // Get the next 30 days
         $dates = collect();
-        for ($i = 0; $i < 7; $i++) {
+        for ($i = 0; $i < 30; $i++) {
             $dates->push(Carbon::now()->addDays($i));
         }
         
