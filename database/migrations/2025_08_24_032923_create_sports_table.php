@@ -11,15 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('futsal_bookings', function (Blueprint $table) {
+        Schema::create('sports', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('phone');
-            $table->date('booking_date');
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->unsignedBigInteger('total_price');
-            $table->text('payment')->nullable();
+            $table->string('name'); // futsal, basket, voli, badminton
+            $table->string('icon')->nullable(); // icon class or image
+            $table->text('description')->nullable();
+            $table->decimal('price_per_hour', 10, 2)->default(0);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('futsal_bookings');
+        Schema::dropIfExists('sports');
     }
 };
