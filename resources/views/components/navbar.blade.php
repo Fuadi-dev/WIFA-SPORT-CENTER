@@ -12,24 +12,24 @@
             <!-- Desktop Menu -->
             <div class="hidden md:block">
                 <div class="ml-10 flex items-baseline space-x-8">
-                    <a href="#home" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="home">
+                    <a href="{{ url('/') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="home">
                         Home
                         <span class="nav-underline absolute bottom-0 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover:w-full"></span>
                     </a>
-                    <a href="#about" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="about">
-                        About
+                    <a href="{{ url('/booking') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="services">
+                        Booking
                         <span class="nav-underline absolute bottom-0 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover:w-full"></span>
                     </a>
-                    <a href="#services" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="services">
-                        Services
+                    <a href="{{ url('/jadwal') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="about">
+                        Jadwal
                         <span class="nav-underline absolute bottom-0 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover:w-full"></span>
                     </a>
-                    <a href="#facilities" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="facilities">
-                        Facilities
+                    <a href="{{ url('/event') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="contact">
+                        Event
                         <span class="nav-underline absolute bottom-0 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover:w-full"></span>
                     </a>
-                    <a href="#contact" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="contact">
-                        Contact
+                    <a href="{{ url('/harga') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm" data-section="facilities">
+                        Harga
                         <span class="nav-underline absolute bottom-0 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover:w-full"></span>
                     </a>
                 </div>
@@ -50,20 +50,20 @@
     <!-- Mobile Menu -->
     <div id="mobile-menu" class="md:hidden hidden">
         <div class="px-2 pt-2 pb-3 space-y-1 bg-amber-950/95 backdrop-blur-sm border-t border-amber-800/30">
-            <a href="#home" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="home">
+            <a href="{{ url('/') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="home">
                 Home
             </a>
-            <a href="#about" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="about">
-                About
+            <a href="{{ url('/booking') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="services">
+                Booking
             </a>
-            <a href="#services" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="services">
-                Services
+            <a href="{{ url('/jadwal') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="about">
+                Jadwal
             </a>
-            <a href="#facilities" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="facilities">
-                Facilities
+            <a href="{{ url('/event') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="contact">
+                Event
             </a>
-            <a href="#contact" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="contact">
-                Contact
+            <a href="{{ url('/harga') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm" data-section="facilities">
+                Harga
             </a>
         </div>
     </div>
@@ -117,7 +117,10 @@
             if (!ticking) {
                 requestAnimationFrame(() => {
                     updateNavbar();
-                    updateActiveSection();
+                    // Only update active section if we're on a page with sections
+                    if (document.getElementById('hero')) {
+                        updateActiveSection();
+                    }
                     ticking = false;
                 });
                 ticking = true;
@@ -126,12 +129,19 @@
 
         window.addEventListener('scroll', requestTick);
 
-        // Active section detection
+        // Active section detection (only run on pages that have sections)
         function updateActiveSection() {
+            // Check if we're on a page with sections
+            const heroSection = document.getElementById('hero');
+            if (!heroSection) {
+                // If no hero section, we're not on the main page, so don't run section detection
+                return;
+            }
+            
             const sections = [
                 { id: 'hero', nav: 'home' },
-                { id: 'about', nav: 'about' },
                 { id: 'services', nav: 'services' },
+                { id: 'about', nav: 'about' },
                 { id: 'facilities', nav: 'facilities' },
                 { id: 'contact', nav: 'contact' }
             ];
@@ -211,33 +221,42 @@
             });
         });
 
-        // Smooth scrolling for navigation links
+        // Smooth scrolling for navigation links (only for anchor links)
         const navLinks = document.querySelectorAll('.nav-link');
         navLinks.forEach(link => {
             link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const targetSection = this.getAttribute('data-section');
-                let targetElement;
+                const href = this.getAttribute('href');
                 
-                // Map navigation sections to actual element IDs
-                if (targetSection === 'home') {
-                    targetElement = document.getElementById('hero');
-                } else {
-                    targetElement = document.getElementById(targetSection);
+                // Only prevent default and smooth scroll for anchor links (starting with #)
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const targetSection = this.getAttribute('data-section');
+                    let targetElement;
+                    
+                    // Map navigation sections to actual element IDs
+                    if (targetSection === 'home') {
+                        targetElement = document.getElementById('hero');
+                    } else {
+                        targetElement = document.getElementById(targetSection);
+                    }
+                    
+                    if (targetElement) {
+                        const offsetTop = targetElement.offsetTop - 80;
+                        window.scrollTo({
+                            top: offsetTop,
+                            behavior: 'smooth'
+                        });
+                    }
                 }
-                
-                if (targetElement) {
-                    const offsetTop = targetElement.offsetTop - 80;
-                    window.scrollTo({
-                        top: offsetTop,
-                        behavior: 'smooth'
-                    });
-                }
+                // For regular URLs, let the browser handle navigation normally
             });
         });
 
         // Initial call to set navbar state
         updateNavbar();
-        updateActiveSection();
+        // Only update active section if we're on a page with sections
+        if (document.getElementById('hero')) {
+            updateActiveSection();
+        }
     });
 </script>

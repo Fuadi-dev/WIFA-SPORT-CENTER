@@ -24,14 +24,14 @@
         @include('pages.hero')
     </section>
 
-    <!-- About Section -->
-    <section id="about" class="py-20 bg-gradient-to-br from-amber-50 via-cream-100 to-amber-100 relative overflow-hidden">
-        @include('pages.about')
+    <!-- Services Section -->
+    <section id="services" class="py-20 bg-gradient-to-br from-amber-50 via-cream-100 to-amber-100 relative overflow-hidden">
+        @include('pages.services')
     </section>
     
-    <!-- Services Section -->
-    <section id="services" class="py-20 bg-gradient-to-br from-amber-100 via-cream-100 to-amber-50 relative overflow-hidden">
-        @include('pages.services')
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-gradient-to-br from-amber-100 via-cream-100 to-amber-50 relative overflow-hidden">
+        @include('pages.about')
     </section>
 
     <!-- Facilities Section -->

@@ -8,7 +8,7 @@
         <!-- Header -->
         <div class="text-center mb-16">
             <h2 class="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
-                Our Premium Services
+                Our Events
             </h2>
             <p class="text-xl text-amber-700 max-w-3xl mx-auto leading-relaxed">
                 Comprehensive fitness programs and services tailored to meet your individual needs and help you achieve your goals.
