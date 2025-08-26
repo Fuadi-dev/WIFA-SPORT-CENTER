@@ -22,7 +22,11 @@ class Booking extends Model
         'notes',
         'payment_method',
         'total_price',
-        'status'
+        'status',
+        'midtrans_snap_token',
+        'midtrans_order_id',
+        'confirmed_at',
+        'paid_at'
     ];
 
     protected $casts = [
@@ -33,6 +37,25 @@ class Booking extends Model
         'confirmed_at' => 'datetime',
         'paid_at' => 'datetime'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($booking) {
+            if (empty($booking->booking_code)) {
+                $booking->booking_code = $booking->generateBookingCode();
+            }
+        });
+    }
+
+    private function generateBookingCode()
+    {
+        $lastBooking = static::latest('id')->first();
+        $nextNumber = $lastBooking ? $lastBooking->id + 1 : 1;
+        
+        return 'WIFA-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    }
 
     public function user()
     {

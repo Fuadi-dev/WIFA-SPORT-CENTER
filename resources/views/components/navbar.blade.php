@@ -13,11 +13,11 @@
             <div class="hidden md:flex items-center space-x-8">
                 <div class="flex items-baseline space-x-8">
                     <a href="{{ url('/') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm {{ request()->routeIs('home') || request()->is('/') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="home">
-                        Home
+                        Beranda
                         <span class="nav-underline absolute bottom-0 left-0 h-0.5 bg-amber-400 transition-all duration-300 {{ request()->routeIs('home') || request()->is('/') ? 'w-full' : 'w-0 group-hover:w-full' }}"></span>
                     </a>
                     <a href="{{ url('/booking') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm {{ request()->routeIs('booking.*') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="booking">
-                        Booking
+                        Pemesanan
                         <span class="nav-underline absolute bottom-0 left-0 h-0.5 bg-amber-400 transition-all duration-300 {{ request()->routeIs('booking.*') ? 'w-full' : 'w-0 group-hover:w-full' }}"></span>
                     </a>
                     <a href="{{ url('/jadwal') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm {{ request()->is('jadwal') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="about">
@@ -25,7 +25,7 @@
                         <span class="nav-underline absolute bottom-0 left-0 h-0.5 bg-amber-400 transition-all duration-300 {{ request()->is('jadwal') ? 'w-full' : 'w-0 group-hover:w-full' }}"></span>
                     </a>
                     <a href="{{ url('/event') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm {{ request()->is('event') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="contact">
-                        Event
+                        Acara
                         <span class="nav-underline absolute bottom-0 left-0 h-0.5 bg-amber-400 transition-all duration-300 {{ request()->is('event') ? 'w-full' : 'w-0 group-hover:w-full' }}"></span>
                     </a>
                 </div>
@@ -53,13 +53,13 @@
                             <div class="absolute right-0 mt-2 w-48 bg-amber-950/95 backdrop-blur-sm rounded-md shadow-lg border border-amber-800/30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                                 <div class="py-2">
                                     <a href="{{ url('/my-bookings') }}" class="block px-4 py-2 text-white hover:text-amber-300 hover:bg-amber-800/20 transition-colors duration-200 {{ request()->routeIs('my-bookings') ? 'text-amber-300 bg-amber-800/20' : '' }}">
-                                        <i class="fas fa-calendar mr-2"></i>My Bookings
+                                        <i class="fas fa-calendar mr-2"></i>Pemesanan Saya
                                     </a>
                                     <hr class="border-amber-800/30 my-1">
                                     <form action="{{ route('logout') }}" method="POST" class="block">
                                         @csrf
                                         <button type="submit" class="w-full text-left px-4 py-2 text-white hover:text-amber-300 hover:bg-amber-800/20 transition-colors duration-200">
-                                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                            <i class="fas fa-sign-out-alt mr-2"></i>Keluar
                                         </button>
                                     </form>
                                 </div>
@@ -68,7 +68,7 @@
                     @else
                         <!-- Login Button -->
                         <a href="{{ route('login') }}" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 border border-amber-500 hover:border-amber-400">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Login
+                            <i class="fas fa-sign-in-alt mr-2"></i>Masuk
                         </a>
                     @endauth
                 </div>
@@ -90,16 +90,16 @@
     <div id="mobile-menu" class="md:hidden hidden">
         <div class="px-2 pt-2 pb-3 space-y-1 bg-amber-950/95 backdrop-blur-sm border-t border-amber-800/30">
             <a href="{{ url('/') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm {{ request()->routeIs('home') || request()->is('/') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="home">
-                Home
+                Beranda
             </a>
             <a href="{{ url('/booking') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm {{ request()->routeIs('booking.*') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="booking">
-                Booking
+                Pemesanan
             </a>
             <a href="{{ url('/jadwal') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm {{ request()->is('jadwal') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="about">
                 Jadwal
             </a>
             <a href="{{ url('/event') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm {{ request()->is('event') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="contact">
-                Event
+                Acara
             </a>
             
             <!-- Mobile Auth Section -->
@@ -122,18 +122,18 @@
                     
                     <!-- User Menu Items -->
                     <a href="{{ url('/my-bookings') }}" class="text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 {{ request()->routeIs('my-bookings') ? 'text-amber-300 bg-amber-800/30' : '' }}">
-                        <i class="fas fa-calendar mr-3"></i>My Bookings
+                        <i class="fas fa-calendar mr-3"></i>Pemesanan Saya
                     </a>
                     <form action="{{ route('logout') }}" method="POST" class="block">
                         @csrf
                         <button type="submit" class="w-full text-left text-white hover:text-amber-300 px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300">
-                            <i class="fas fa-sign-out-alt mr-3"></i>Logout
+                            <i class="fas fa-sign-out-alt mr-3"></i>Keluar
                         </button>
                     </form>
                 @else
                     <!-- Mobile Login Button -->
                     <a href="{{ route('login') }}" class="block mx-4 my-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 text-center border border-amber-500 hover:border-amber-400">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                        <i class="fas fa-sign-in-alt mr-2"></i>Masuk
                     </a>
                 @endauth
             </div>

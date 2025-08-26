@@ -106,7 +106,7 @@
                     <!-- Email Field -->
                     <div>
                         <label for="email" class="block text-sm font-semibold text-amber-100 mb-2">
-                            Email Address
+                            Alamat Email
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
@@ -124,7 +124,7 @@
                     <!-- Password Field -->
                     <div>
                         <label for="password" class="block text-sm font-semibold text-amber-100 mb-2">
-                            Password
+                            Kata Sandi
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">

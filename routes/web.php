@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DebugAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\MainController;
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +33,13 @@ Route::post('/otp/resend/{id}', [AuthController::class, 'resendOtp'])->name('otp
 // Logout Route
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Midtrans webhook (outside auth middleware)
+Route::post('/midtrans/notification', [BookingController::class, 'midtransNotification'])->name('midtrans.notification');
+
+// Debug routes (local only)
+Route::get('/test/ngrok-info', [TestController::class, 'ngrokInfo'])->name('test.ngrok-info');
+Route::get('/test/midtrans-debug/{booking}', [TestController::class, 'debugMidtrans'])->name('test.midtrans-debug');
+
 Route::middleware(['auth'])->group(function () {
     Route::prefix('admin')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
@@ -47,6 +55,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/confirmation/{booking}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
         Route::post('/check-availability', [BookingController::class, 'checkAvailability'])->name('booking.check-availability');
         Route::post('/get-price', [BookingController::class, 'getPriceForTimeRange'])->name('booking.get-price');
+        
+        // Midtrans payment routes
+        Route::get('/payment-status/{booking}', [BookingController::class, 'checkPaymentStatus'])->name('booking.payment-status');
         
         // Legacy route
         Route::get('/olahraga', [BookingController::class, 'olahraga']);

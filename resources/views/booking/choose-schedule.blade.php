@@ -32,7 +32,7 @@
         .scroll-hint {
             animation: scroll-hint 2s ease-in-out infinite;
         }
-    </style>>
+    </style>
 </head>
 <body class="bg-gradient-to-br from-amber-50 to-orange-100 min-h-screen">
     

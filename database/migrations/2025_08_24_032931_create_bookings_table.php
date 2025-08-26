@@ -22,9 +22,11 @@ return new class extends Migration
             $table->time('end_time');
             $table->string('team_name'); // nama tim/instansi/individu
             $table->text('notes')->nullable();
-            $table->enum('payment_method', ['cash', 'transfer']);
+            $table->enum('payment_method', ['cash', 'midtrans']);
             $table->decimal('total_price', 10, 2);
-            $table->enum('status', ['pending', 'confirmed', 'paid', 'cancelled', 'completed'])->default('pending');
+            $table->enum('status', ['pending_payment', 'confirmed', 'paid', 'cancelled', 'completed'])->default('pending_payment');
+            $table->string('midtrans_snap_token')->nullable(); // For Midtrans integration
+            $table->string('midtrans_order_id')->nullable(); // Midtrans order ID
             $table->timestamp('confirmed_at')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();

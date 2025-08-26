@@ -8,6 +8,8 @@ use App\Models\Court;
 use App\Models\Booking;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use App\Services\MidtransService;
 
 class BookingController extends Controller
 {
@@ -172,46 +174,96 @@ class BookingController extends Controller
         $request->validate([
             'sport_id' => 'required|exists:sports,id',
             'court_id' => 'required|exists:courts,id',
-            'booking_date' => 'required|date|after_or_equal:today',
+            'date' => 'required|date|after_or_equal:today',
             'start_time' => 'required',
             'end_time' => 'required|after:start_time',
             'team_name' => 'required|string|max:255',
-            'payment_method' => 'required|in:cash,transfer',
-            'notes' => 'nullable|string'
+            'payment_method' => 'required|in:cash,midtrans',
+            'notes' => 'nullable|string',
+            'agree_terms' => 'required|accepted'
         ]);
 
         // Double check availability
         $court = Court::findOrFail($request->court_id);
-        if (!$court->isAvailable($request->booking_date, $request->start_time, $request->end_time)) {
+        if (!$court->isAvailable($request->date, $request->start_time, $request->end_time)) {
             return back()->withErrors(['error' => 'Slot waktu sudah tidak tersedia.']);
         }
 
         // Calculate price with time-based pricing
         $totalPrice = $this->calculateTotalPrice($request->start_time, $request->end_time);
 
+        // Determine initial status based on payment method
+        $initialStatus = $request->payment_method === 'cash' ? 'confirmed' : 'pending_payment';
+        $confirmedAt = $request->payment_method === 'cash' ? now() : null;
+
         // Create booking
         $booking = Booking::create([
             'user_id' => Auth::id(),
             'sport_id' => $request->sport_id,
             'court_id' => $request->court_id,
-            'booking_date' => $request->booking_date,
+            'booking_date' => $request->date,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'team_name' => $request->team_name,
             'notes' => $request->notes,
             'payment_method' => $request->payment_method,
             'total_price' => $totalPrice,
-            'status' => 'pending'
+            'status' => $initialStatus,
+            'confirmed_at' => $confirmedAt
         ]);
 
+        // Handle Midtrans payment
+        if ($request->payment_method === 'midtrans') {
+            return $this->handleMidtransPayment($booking);
+        }
+
         return redirect()->route('booking.confirmation', $booking->id)
-                        ->with('success', 'Booking berhasil dibuat!');
+                        ->with('success', 'Pemesanan berhasil dibuat!');
     }
 
-    // Step 6: Booking Confirmation
+    // Handle Midtrans Payment
+    private function handleMidtransPayment(Booking $booking)
+    {
+        try {
+            Log::info('Starting Midtrans payment processing', [
+                'booking_id' => $booking->id,
+                'booking_code' => $booking->booking_code,
+                'total_price' => $booking->total_price
+            ]);
+            
+            $midtransService = new MidtransService();
+            $snapToken = $midtransService->createTransaction($booking);
+            
+            Log::info('Snap token created successfully', [
+                'booking_id' => $booking->id,
+                'snap_token' => $snapToken
+            ]);
+            
+            // Save the snap token to booking (redundant but safe)
+            $booking->update(['midtrans_snap_token' => $snapToken]);
+            
+            return redirect()->route('booking.confirmation', $booking->id)
+                            ->with('success', 'Pemesanan berhasil dibuat! Silakan lakukan pembayaran.')
+                            ->with('snap_token', $snapToken);
+        } catch (\Exception $e) {
+            Log::error('Midtrans payment processing failed', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // If Midtrans fails, update booking status to failed
+            $booking->update(['status' => 'cancelled']);
+            
+            return back()->withErrors(['error' => 'Terjadi kesalahan dalam memproses pembayaran: ' . $e->getMessage()])
+                        ->withInput();
+        }
+    }
+
+    // Step 6: Pemesanan Confirmation
     public function confirmation(Booking $booking)
     {
-        // Ensure user can only see their own booking
+        // Ensure user can only see their own pemesanan
         if ($booking->user_id !== Auth::id()) {
             abort(403);
         }
@@ -229,6 +281,57 @@ class BookingController extends Controller
                           ->paginate(10);
 
         return view('booking.my-bookings', compact('bookings'));
+    }
+
+    // Midtrans payment notification webhook
+    public function midtransNotification(Request $request)
+    {
+        // Log incoming webhook for debugging
+        Log::info('Midtrans Webhook Received', [
+            'headers' => $request->headers->all(),
+            'body' => $request->all(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        try {
+            $midtransService = new MidtransService();
+            $result = $midtransService->handleNotification($request->all());
+            
+            Log::info('Midtrans Webhook Processed Successfully', ['result' => $result]);
+            
+            return response()->json(['status' => 'success', 'message' => 'Notification processed']);
+        } catch (\Exception $e) {
+            Log::error('Midtrans Webhook Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // Check Midtrans payment status (for manual check)
+    public function checkPaymentStatus(Booking $booking)
+    {
+        // Ensure user can only check their own booking
+        if ($booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        try {
+            $midtransService = new MidtransService();
+            $status = $midtransService->getTransactionStatus($booking->midtrans_order_id);
+            
+            return response()->json([
+                'status' => 'success',
+                'payment_status' => $status,
+                'booking_status' => $booking->fresh()->status
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
 
     // Legacy method for old route
