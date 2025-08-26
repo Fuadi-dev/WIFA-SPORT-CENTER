@@ -12,9 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 
 Route::get('/',[MainController::class, 'index'])->name('home');
-Route::get('/test-oauth', function() {
-    return view('test-oauth');
-})->name('test.oauth');
 
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/login', [AuthController::class, 'loginPost'])->name('login.post');
@@ -35,10 +32,6 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Midtrans webhook (outside auth middleware)
 Route::post('/midtrans/notification', [BookingController::class, 'midtransNotification'])->name('midtrans.notification');
-
-// Debug routes (local only)
-Route::get('/test/ngrok-info', [TestController::class, 'ngrokInfo'])->name('test.ngrok-info');
-Route::get('/test/midtrans-debug/{booking}', [TestController::class, 'debugMidtrans'])->name('test.midtrans-debug');
 
 Route::middleware(['auth'])->group(function () {
     Route::prefix('admin')->group(function () {
