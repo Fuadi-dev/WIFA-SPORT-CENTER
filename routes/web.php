@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DebugAuthController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\JadwalController;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 
 Route::get('/',[MainController::class, 'index'])->name('home');
+
+// Public routes
+Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal');
 
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/login', [AuthController::class, 'loginPost'])->name('login.post');

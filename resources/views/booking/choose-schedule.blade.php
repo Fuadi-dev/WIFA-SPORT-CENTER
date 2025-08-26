@@ -136,9 +136,9 @@
                         <label class="date-option cursor-pointer flex-shrink-0">
                             <input type="radio" name="date" value="{{ $date->format('Y-m-d') }}" class="hidden" required>
                             <div class="date-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-4 text-center transition-all duration-300 w-20">
-                                <div class="font-semibold text-gray-700 text-xs">{{ $date->format('D') }}</div>
+                                <div class="font-semibold text-gray-700 text-xs">{{ $date->locale('id')->isoFormat('ddd') }}</div>
                                 <div class="text-2xl font-bold text-amber-600">{{ $date->format('d') }}</div>
-                                <div class="text-sm text-gray-600">{{ $date->format('M') }}</div>
+                                <div class="text-sm text-gray-600">{{ $date->locale('id')->isoFormat('MMM') }}</div>
                                 @if($date->isToday())
                                     <div class="text-xs text-amber-600 font-semibold mt-1">Hari Ini</div>
                                 @endif
