@@ -13,6 +13,7 @@ class Court extends Model
         'name',
         'sport_id',
         'type',
+        'physical_location',
         'description',
         'is_active'
     ];
@@ -38,17 +39,111 @@ class Court extends Model
 
     public function isAvailable($date, $startTime, $endTime)
     {
-        return !$this->bookings()
+        // Logic untuk availability check berdasarkan jenis court
+        $conflictingCourts = $this->getConflictingCourts();
+        
+        // Check for any booking conflicts in courts that would conflict with this booking
+        return !Booking::whereIn('court_id', $conflictingCourts)
             ->where('booking_date', $date)
             ->where(function($query) use ($startTime, $endTime) {
-                $query->whereBetween('start_time', [$startTime, $endTime])
-                      ->orWhereBetween('end_time', [$startTime, $endTime])
-                      ->orWhere(function($q) use ($startTime, $endTime) {
-                          $q->where('start_time', '<=', $startTime)
-                            ->where('end_time', '>=', $endTime);
-                      });
+                // Check for any TRUE overlap between existing bookings and requested time
+                $query->where(function($q) use ($startTime, $endTime) {
+                    // Existing booking overlaps with requested time if:
+                    // 1. Existing booking starts before requested ends AND
+                    // 2. Existing booking ends after requested starts
+                    $q->where('start_time', '<', $endTime)
+                      ->where('end_time', '>', $startTime);
+                });
             })
-            ->whereIn('status', ['confirmed', 'paid'])
+            ->whereIn('status', ['confirmed', 'paid', 'pending_payment'])
             ->exists();
+    }
+
+    /**
+     * Get courts that would conflict with this court's booking
+     */
+    public function getConflictingCourts()
+    {
+        if (!$this->physical_location) {
+            return [$this->id];
+        }
+        
+        // Rules:
+        // 1. Voli conflicts with ALL courts in same location (Badminton A + B)
+        // 2. Badminton A only conflicts with Voli (not with Badminton B)
+        // 3. Badminton B only conflicts with Voli (not with Badminton A)
+        // 4. Futsal conflicts with Basket and vice versa
+        
+        $sportName = $this->sport->name;
+        
+        if ($sportName === 'Voli') {
+            // Voli needs entire court, conflicts with ALL courts in same location
+            return Court::where('physical_location', $this->physical_location)
+                ->pluck('id')
+                ->toArray();
+        }
+        
+        if ($sportName === 'Badminton') {
+            // Badminton only conflicts with Voli (not with other Badminton courts)
+            $conflictingIds = [$this->id]; // Always include self
+            
+            // Add Voli court if it's in same location
+            $voliCourt = Court::where('physical_location', $this->physical_location)
+                ->whereHas('sport', function($q) {
+                    $q->where('name', 'Voli');
+                })
+                ->first();
+                
+            if ($voliCourt) {
+                $conflictingIds[] = $voliCourt->id;
+            }
+            
+            return $conflictingIds;
+        }
+        
+        if ($sportName === 'Futsal') {
+            // Futsal conflicts with Basket
+            return Court::where('physical_location', $this->physical_location)
+                ->pluck('id')
+                ->toArray();
+        }
+        
+        if ($sportName === 'Basket') {
+            // Basket conflicts with Futsal
+            return Court::where('physical_location', $this->physical_location)
+                ->pluck('id')
+                ->toArray();
+        }
+        
+        // Default: only check this court
+        return [$this->id];
+    }
+
+    /**
+     * Get all courts that share the same physical location
+     */
+    public function getSharedCourts()
+    {
+        if (!$this->physical_location) {
+            return collect([$this]);
+        }
+        
+        $sportName = $this->sport->name;
+        
+        if ($sportName === 'Badminton') {
+            // Badminton courts share with Voli, but not with each other for display purposes
+            return Court::where('physical_location', $this->physical_location)
+                ->whereHas('sport', function($q) {
+                    $q->where('name', 'Voli');
+                })
+                ->with('sport')
+                ->get();
+        }
+        
+        // For other sports, show all courts in same location except self
+        return Court::where('physical_location', $this->physical_location)
+            ->where('id', '!=', $this->id)
+            ->with('sport')
+            ->get();
     }
 }

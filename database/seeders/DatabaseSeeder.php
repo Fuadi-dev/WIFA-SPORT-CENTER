@@ -15,5 +15,9 @@ class DatabaseSeeder extends Seeder
     {
         User::factory(1)->create();
         
+        // Seed Sports and Courts
+        $this->call([
+            SportsAndCourtsSeeder::class,
+        ]);
     }
 }

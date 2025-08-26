@@ -63,16 +63,22 @@ class BookingController extends Controller
         return view('booking.choose-schedule', compact('sport', 'court', 'dates', 'timeSlots'));
     }
 
-    // Get price based on hour
-    private function getPriceByHour($hour)
+    // Get price based on hour and sport
+    private function getPriceByHour($hour, $sport = null)
     {
+        // Base price berdasarkan waktu
+        $basePrice = 0;
         if ($hour >= 6 && $hour < 12) {
-            return 60000; // 06:00 - 12:00 = Rp 60.000
+            $basePrice = 60000; // 06:00 - 12:00 = Rp 60.000
         } elseif ($hour >= 12 && $hour < 18) {
-            return 80000; // 12:00 - 18:00 = Rp 80.000
+            $basePrice = 80000; // 12:00 - 18:00 = Rp 80.000
         } else {
-            return 100000; // 18:00 - 24:00 = Rp 100.000
+            $basePrice = 100000; // 18:00 - 24:00 = Rp 100.000
         }
+        
+        // Untuk sementara, semua olahraga menggunakan harga yang sama
+        // Nanti bisa diubah sesuai kebutuhan per olahraga
+        return $basePrice;
     }
 
     // Get price category name
@@ -158,6 +164,18 @@ class BookingController extends Controller
         $date = $request->date;
         $startTime = $request->start_time;
         $endTime = $request->end_time;
+        
+        // Validate that all required parameters are present
+        if (!$date || !$startTime || !$endTime) {
+            return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
+                           ->withErrors(['error' => 'Data booking tidak lengkap. Silakan pilih ulang jadwal.']);
+        }
+        
+        // IMPORTANT: Double check availability for the entire time range before showing form
+        if (!$court->isAvailable($date, $startTime, $endTime)) {
+            return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
+                           ->withErrors(['error' => 'Maaf, slot waktu yang dipilih sudah tidak tersedia. Silakan pilih jadwal lain.']);
+        }
         
         // Calculate duration and price with time-based pricing
         $start = Carbon::parse($startTime);

@@ -44,38 +44,42 @@ class SportsAndCourtsSeeder extends Seeder
         ]);
 
         // Create Courts
-        // Futsal Court
+        // Futsal Court (Physical Location 1)
         Court::create([
             'name' => 'Lapangan Futsal',
             'sport_id' => $futsal->id,
             'type' => null,
+            'physical_location' => 'location_1', // Lapangan fisik #1
             'description' => 'Lapangan futsal standar internasional',
             'is_active' => true
         ]);
 
-        // Basket Court (uses futsal court)
+        // Basket Court (uses same physical location as futsal)
         Court::create([
             'name' => 'Lapangan Futsal (Basket)',
             'sport_id' => $basket->id,
             'type' => null,
+            'physical_location' => 'location_1', // Same as futsal - shared court
             'description' => 'Lapangan futsal yang juga bisa digunakan untuk basket',
             'is_active' => true
         ]);
 
-        // Voli Court
+        // Voli Court (Physical Location 2)
         Court::create([
             'name' => 'Lapangan Voli',
             'sport_id' => $voli->id,
             'type' => null,
+            'physical_location' => 'location_2', // Lapangan fisik #2
             'description' => 'Lapangan voli standar',
             'is_active' => true
         ]);
 
-        // Badminton Courts (2 courts in 1 voli court)
+        // Badminton Courts (both use same physical location as voli)
         Court::create([
             'name' => 'Badminton A',
             'sport_id' => $badminton->id,
             'type' => 'A',
+            'physical_location' => 'location_2', // Same as voli - shared court
             'description' => 'Court badminton A (setengah lapangan voli)',
             'is_active' => true
         ]);
@@ -84,6 +88,7 @@ class SportsAndCourtsSeeder extends Seeder
             'name' => 'Badminton B',
             'sport_id' => $badminton->id,
             'type' => 'B',
+            'physical_location' => 'location_2', // Same as voli - shared court
             'description' => 'Court badminton B (setengah lapangan voli)',
             'is_active' => true
         ]);
