@@ -47,15 +47,20 @@ class BookingController extends Controller
             $dates->push(Carbon::now()->addDays($i));
         }
         
-        // Operating hours (6 AM to 12 AM - 24:00)
+        // Operating hours (8 AM to 12 AM - 24:00) based on price list
         $timeSlots = [];
-        for ($hour = 6; $hour < 24; $hour++) {
-            $price = $this->getPriceByHour($hour);
+        for ($hour = 8; $hour < 24; $hour++) {
+            // Get both weekday and weekend prices
+            $weekdayPrice = $this->getPriceByHour($hour, $sport, Carbon::parse('2025-09-01')); // Monday = weekday
+            $weekendPrice = $this->getPriceByHour($hour, $sport, Carbon::parse('2025-08-29')); // Friday = weekend
+            
             $timeSlots[] = [
                 'start' => sprintf('%02d:00', $hour),
                 'end' => sprintf('%02d:00', $hour + 1),
                 'display' => sprintf('%02d:00-%02d:00', $hour, $hour + 1),
-                'price' => $price,
+                'price' => $weekdayPrice, // Default to weekday price for display
+                'weekday_price' => $weekdayPrice,
+                'weekend_price' => $weekendPrice,
                 'price_category' => $this->getPriceCategoryByHour($hour)
             ];
         }
@@ -64,27 +69,77 @@ class BookingController extends Controller
     }
 
     // Get price based on hour and sport
-    private function getPriceByHour($hour, $sport = null)
+    private function getPriceByHour($hour, $sport = null, $date = null)
     {
-        // Base price berdasarkan waktu
-        $basePrice = 0;
-        if ($hour >= 6 && $hour < 12) {
-            $basePrice = 60000; // 06:00 - 12:00 = Rp 60.000
-        } elseif ($hour >= 12 && $hour < 18) {
-            $basePrice = 80000; // 12:00 - 18:00 = Rp 80.000
-        } else {
-            $basePrice = 100000; // 18:00 - 24:00 = Rp 100.000
+        // Determine if it's weekend (Friday, Saturday, Sunday)
+        $isWeekend = false;
+        if ($date) {
+            $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+            $isWeekend = in_array($dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]);
         }
         
-        // Untuk sementara, semua olahraga menggunakan harga yang sama
-        // Nanti bisa diubah sesuai kebutuhan per olahraga
-        return $basePrice;
+        // Get sport name if sport object is provided
+        $sportName = $sport ? strtolower($sport->name) : 'futsal';
+        
+        // Price based on time slots and sport
+        $price = 0;
+        if ($hour >= 8 && $hour < 12) {
+            // 08:00 - 12:00
+            switch ($sportName) {
+                case 'futsal':
+                    $price = $isWeekend ? 65000 : 60000;
+                    break;
+                case 'badminton':
+                    $price = $isWeekend ? 35000 : 30000;
+                    break;
+                case 'voli':
+                case 'volleyball':
+                    $price = $isWeekend ? 55000 : 50000;
+                    break;
+                default:
+                    $price = $isWeekend ? 65000 : 60000; // Default to futsal prices
+            }
+        } elseif ($hour >= 12 && $hour < 18) {
+            // 12:00 - 18:00
+            switch ($sportName) {
+                case 'futsal':
+                    $price = $isWeekend ? 85000 : 80000;
+                    break;
+                case 'badminton':
+                    $price = $isWeekend ? 40000 : 35000;
+                    break;
+                case 'voli':
+                case 'volleyball':
+                    $price = $isWeekend ? 65000 : 60000;
+                    break;
+                default:
+                    $price = $isWeekend ? 85000 : 80000; // Default to futsal prices
+            }
+        } elseif ($hour >= 18 && $hour < 24) {
+            // 18:00 - 00:00
+            switch ($sportName) {
+                case 'futsal':
+                    $price = $isWeekend ? 105000 : 100000;
+                    break;
+                case 'badminton':
+                    $price = $isWeekend ? 45000 : 40000;
+                    break;
+                case 'voli':
+                case 'volleyball':
+                    $price = $isWeekend ? 75000 : 70000;
+                    break;
+                default:
+                    $price = $isWeekend ? 105000 : 100000; // Default to futsal prices
+            }
+        }
+        
+        return $price;
     }
 
     // Get price category name
     private function getPriceCategoryByHour($hour)
     {
-        if ($hour >= 6 && $hour < 12) {
+        if ($hour >= 8 && $hour < 12) {
             return 'morning'; // Pagi
         } elseif ($hour >= 12 && $hour < 18) {
             return 'afternoon'; // Siang
@@ -94,7 +149,7 @@ class BookingController extends Controller
     }
 
     // Calculate total price for time range
-    private function calculateTotalPrice($startTime, $endTime)
+    private function calculateTotalPrice($startTime, $endTime, $sport = null, $date = null)
     {
         $start = Carbon::parse($startTime);
         $end = Carbon::parse($endTime);
@@ -102,7 +157,7 @@ class BookingController extends Controller
         
         $currentHour = $start->hour;
         while ($currentHour < $end->hour) {
-            $totalPrice += $this->getPriceByHour($currentHour);
+            $totalPrice += $this->getPriceByHour($currentHour, $sport, $date);
             $currentHour++;
         }
         
@@ -128,18 +183,35 @@ class BookingController extends Controller
     {
         $startTime = $request->start_time;
         $duration = $request->duration;
+        $sportId = $request->sport_id;
+        $date = $request->date;
+        
+        $sport = $sportId ? Sport::find($sportId) : null;
+        
+        // Debug weekend detection
+        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+        $isWeekend = in_array($dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]);
+        Log::info('Price calculation debug', [
+            'date' => $date,
+            'dayOfWeek' => $dayOfWeek,
+            'dayName' => Carbon::parse($date)->format('l'),
+            'isWeekend' => $isWeekend,
+            'sport' => $sport ? $sport->name : 'null',
+            'startTime' => $startTime,
+            'duration' => $duration
+        ]);
         
         $start = Carbon::parse($startTime);
         $end = $start->copy()->addHours($duration);
         $endTime = $end->format('H:i');
         
-        $totalPrice = $this->calculateTotalPrice($startTime, $endTime);
+        $totalPrice = $this->calculateTotalPrice($startTime, $endTime, $sport, $date);
         
         // Get price breakdown by hour
         $priceBreakdown = [];
         $currentHour = $start->hour;
         for ($i = 0; $i < $duration; $i++) {
-            $hourPrice = $this->getPriceByHour($currentHour);
+            $hourPrice = $this->getPriceByHour($currentHour, $sport, $date);
             $category = $this->getPriceCategoryByHour($currentHour);
             $priceBreakdown[] = [
                 'hour' => sprintf('%02d:00-%02d:00', $currentHour, $currentHour + 1),
@@ -148,6 +220,11 @@ class BookingController extends Controller
             ];
             $currentHour++;
         }
+        
+        Log::info('Price calculation result', [
+            'totalPrice' => $totalPrice,
+            'priceBreakdown' => $priceBreakdown
+        ]);
         
         return response()->json([
             'total_price' => $totalPrice,
@@ -181,7 +258,7 @@ class BookingController extends Controller
         $start = Carbon::parse($startTime);
         $end = Carbon::parse($endTime);
         $duration = $start->diffInHours($end);
-        $totalPrice = $this->calculateTotalPrice($startTime, $endTime);
+        $totalPrice = $this->calculateTotalPrice($startTime, $endTime, $sport, $date);
         
         return view('booking.booking-form', compact('sport', 'court', 'date', 'startTime', 'endTime', 'duration', 'totalPrice'));
     }
@@ -208,7 +285,8 @@ class BookingController extends Controller
         }
 
         // Calculate price with time-based pricing
-        $totalPrice = $this->calculateTotalPrice($request->start_time, $request->end_time);
+        $sport = Sport::findOrFail($request->sport_id);
+        $totalPrice = $this->calculateTotalPrice($request->start_time, $request->end_time, $sport, $request->date);
 
         // Determine initial status based on payment method
         $initialStatus = $request->payment_method === 'cash' ? 'confirmed' : 'pending_payment';

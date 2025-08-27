@@ -85,35 +85,61 @@
             <h1 class="text-4xl md:text-5xl font-bold text-amber-800 mb-4">
                 Pilih Jadwal Booking
             </h1>
-            <p class="text-xl text-gray-700 max-w-2xl mx-auto">
+                        <p class="text-xl text-gray-700 max-w-2xl mx-auto">
                 {{ $sport->name }} - {{ $court->name }}
                 @if($court->physical_location)
                     @php
                         $sharedCourts = $court->getSharedCourts()->where('id', '!=', $court->id);
                     @endphp
                     @if($sharedCourts->count() > 0)
-                        <br><span class="text-sm text-amber-600 font-semibold">
-                            📍 Lapangan fisik yang sama dengan: 
-                            {{ $sharedCourts->map(function($c) { return $c->sport->name . ' (' . $c->name . ')'; })->join(', ') }}
-                        </span>
                     @endif
                 @endif
             </p>
+            <div class="mt-2 text-sm text-gray-600 max-w-2xl mx-auto">
+                <p><strong>Weekend:</strong> Jumat, Sabtu, Minggu | <strong>Weekday:</strong> Senin - Kamis</p>
+            </div>
             <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
                 <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-center">
                     <i class="fas fa-sun mr-2"></i>
-                    <div class="font-semibold">06:00 - 12:00</div>
-                    <div class="text-sm">Rp 60.000/jam</div>
+                    <div class="font-semibold">08:00 - 12:00</div>
+                    @if($sport->name === 'Futsal')
+                        <div class="text-sm">Weekday: Rp 60.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 65.000/jam</div>
+                    @elseif($sport->name === 'Badminton')
+                        <div class="text-sm">Weekday: Rp 30.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 35.000/jam</div>
+                    @elseif(in_array($sport->name, ['Voli', 'Volleyball']))
+                        <div class="text-sm">Weekday: Rp 50.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 55.000/jam</div>
+                    @endif
                 </div>
                 <div class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-center">
                     <i class="fas fa-cloud-sun mr-2"></i>
                     <div class="font-semibold">12:00 - 18:00</div>
-                    <div class="text-sm">Rp 80.000/jam</div>
+                    @if($sport->name === 'Futsal')
+                        <div class="text-sm">Weekday: Rp 80.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 85.000/jam</div>
+                    @elseif($sport->name === 'Badminton')
+                        <div class="text-sm">Weekday: Rp 35.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 40.000/jam</div>
+                    @elseif(in_array($sport->name, ['Voli', 'Volleyball']))
+                        <div class="text-sm">Weekday: Rp 60.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 65.000/jam</div>
+                    @endif
                 </div>
                 <div class="bg-purple-100 text-purple-800 px-4 py-2 rounded-lg text-center">
                     <i class="fas fa-moon mr-2"></i>
                     <div class="font-semibold">18:00 - 24:00</div>
-                    <div class="text-sm">Rp 100.000/jam</div>
+                    @if($sport->name === 'Futsal')
+                        <div class="text-sm">Weekday: Rp 100.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 105.000/jam</div>
+                    @elseif($sport->name === 'Badminton')
+                        <div class="text-sm">Weekday: Rp 40.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 45.000/jam</div>
+                    @elseif(in_array($sport->name, ['Voli', 'Volleyball']))
+                        <div class="text-sm">Weekday: Rp 70.000/jam</div>
+                        <div class="text-sm">Weekend: Rp 75.000/jam</div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -190,7 +216,14 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="timeSlots">
                     @foreach($timeSlots as $slot)
                     <label class="time-slot cursor-pointer">
-                        <input type="radio" name="start_time" value="{{ $slot['start'] }}" data-price="{{ $slot['price'] }}" data-category="{{ $slot['price_category'] }}" class="hidden" required>
+                        <input type="radio" 
+                               name="start_time" 
+                               value="{{ $slot['start'] }}" 
+                               data-price="{{ $slot['price'] }}" 
+                               data-weekday-price="{{ $slot['weekday_price'] }}"
+                               data-weekend-price="{{ $slot['weekend_price'] }}"
+                               data-category="{{ $slot['price_category'] }}" 
+                               class="hidden" required>
                         <div class="time-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-3 text-center transition-all duration-300">
                             <div class="font-semibold text-gray-700">{{ $slot['display'] }}</div>
                             <div class="text-xs mt-1 
@@ -288,6 +321,9 @@
                     timeInput.checked = false;
                 });
                 
+                // Update price display for all time slots based on weekend/weekday
+                updateTimeSlotPrices();
+                
                 // Clear availability cache for the new date
                 clearAvailabilityDisplay();
                 updateSelectedDate();
@@ -304,8 +340,8 @@
                 
                 // Check if this selection would create an overlap
                 if (selectedDate && selectedDuration) {
-                    checkTimeSlotBeforeSelection(proposedStartTime, selectedDuration).then(isValid => {
-                        if (isValid) {
+                    checkTimeSlotBeforeSelection(proposedStartTime, selectedDuration).then(result => {
+                        if (result.valid) {
                             selectedTime = proposedStartTime;
                             updateSelectedTime();
                             calculatePrice();
@@ -314,11 +350,23 @@
                             // Revert selection
                             this.checked = false;
                             
-                            // Show SweetAlert warning
+                            // Show appropriate error message based on reason
+                            let title, text;
+                            if (result.reason === 'exceeds_hours') {
+                                title = 'Melebihi Jam Operasional';
+                                text = `Tidak dapat memilih ${proposedStartTime} dengan durasi ${selectedDuration} jam karena akan berakhir pada ${result.endHour}:00 (melebihi jam operasional 24:00).`;
+                            } else if (result.reason === 'booking_conflict') {
+                                title = 'Waktu Tidak Tersedia';
+                                text = `Tidak dapat memilih ${proposedStartTime} dengan durasi ${selectedDuration} jam karena bertabrakan dengan booking yang sudah ada.`;
+                            } else {
+                                title = 'Waktu Tidak Tersedia';
+                                text = `Tidak dapat memilih ${proposedStartTime} dengan durasi ${selectedDuration} jam. Silakan pilih waktu lain.`;
+                            }
+                            
                             Swal.fire({
                                 icon: 'warning',
-                                title: 'Waktu Tidak Tersedia',
-                                text: `Tidak dapat memilih ${proposedStartTime} dengan durasi ${selectedDuration} jam karena bertabrakan dengan booking yang sudah ada.`,
+                                title: title,
+                                text: text,
                                 showConfirmButton: true,
                                 confirmButtonText: 'Mengerti',
                                 confirmButtonColor: '#f59e0b'
@@ -340,8 +388,8 @@
             
             // If there's a selected time, check if new duration creates conflict
             if (selectedTime && selectedDate) {
-                checkTimeSlotBeforeSelection(selectedTime, newDuration).then(isValid => {
-                    if (isValid) {
+                checkTimeSlotBeforeSelection(selectedTime, newDuration).then(result => {
+                    if (result.valid) {
                         selectedDuration = newDuration;
                         updateSelectedDuration();
                         updateSelectedTime();
@@ -355,11 +403,23 @@
                         // Revert duration change
                         this.value = selectedDuration;
                         
-                        // Show SweetAlert warning
+                        // Show appropriate error message based on reason
+                        let title, text;
+                        if (result.reason === 'exceeds_hours') {
+                            title = 'Durasi Melebihi Jam Operasional';
+                            text = `Tidak dapat mengubah durasi menjadi ${newDuration} jam pada waktu ${selectedTime} karena akan berakhir pada ${result.endHour}:00 (melebihi jam operasional 24:00).`;
+                        } else if (result.reason === 'booking_conflict') {
+                            title = 'Durasi Bertabrakan dengan Booking Lain';
+                            text = `Tidak dapat mengubah durasi menjadi ${newDuration} jam karena akan bertabrakan dengan booking yang sudah ada.`;
+                        } else {
+                            title = 'Durasi Tidak Valid';
+                            text = `Tidak dapat mengubah durasi menjadi ${newDuration} jam. Silakan pilih durasi lain.`;
+                        }
+                        
                         Swal.fire({
                             icon: 'error',
-                            title: 'Durasi Tidak Valid',
-                            text: `Tidak dapat mengubah durasi menjadi ${newDuration} jam karena akan bertabrakan dengan booking yang sudah ada.`,
+                            title: title,
+                            text: text,
                             showConfirmButton: true,
                             confirmButtonText: 'Pilih Durasi Lain',
                             confirmButtonColor: '#f59e0b'
@@ -377,26 +437,26 @@
                 
                 updateSelectedDuration();
                 updateSelectedTime(); // This will show "-" since selectedTime is null
-                calculatePrice();
                 if (selectedDate) {
                     clearAvailabilityDisplay();
                     checkAvailabilityWithDebounce();
                 }
+                calculatePrice(); // This will clear the price display since selectedTime is null
                 updateContinueButton();
             }
         });
 
         // Check if a specific time slot would be valid before allowing selection
         async function checkTimeSlotBeforeSelection(startTime, duration) {
-            if (!selectedDate) return false;
+            if (!selectedDate) return { valid: false, reason: 'no_date' };
             
             const startHour = parseInt(startTime.split(':')[0]);
             const endHour = startHour + duration;
             const endTime = Math.min(endHour, 24).toString().padStart(2, '0') + ':00';
             
-            // Check if exceeds operating hours
+            // Check if exceeds operating hours first
             if (endHour > 24) {
-                return false;
+                return { valid: false, reason: 'exceeds_hours', endHour };
             }
             
             try {
@@ -415,10 +475,13 @@
                 });
                 
                 const data = await response.json();
-                return data.available;
+                return { 
+                    valid: data.available, 
+                    reason: data.available ? 'available' : 'booking_conflict' 
+                };
             } catch (error) {
                 console.error('Error checking availability:', error);
-                return false;
+                return { valid: false, reason: 'error' };
             }
         }
 
@@ -605,7 +668,7 @@
                 initializeTimeSlots();
             }
             
-            calculatePrice(); // This will show "Pilih waktu untuk melihat harga"
+            calculatePrice(); // This will show "Pilih tanggal dan waktu untuk melihat harga"
             updateContinueButton();
             
             console.log('Schedule page initialized');
@@ -667,6 +730,9 @@
                 // Update the selected date display
                 updateSelectedDate();
                 
+                // Update time slot prices for today
+                updateTimeSlotPrices();
+                
                 // Check availability for today
                 checkAvailabilityWithDebounce();
                 
@@ -693,12 +759,34 @@
         }
 
         function calculatePrice() {
-            if (!selectedTime) {
-                // Clear price display if no time selected
+            console.log('calculatePrice called', {selectedTime, selectedDate, selectedDuration});
+            
+            if (!selectedTime || !selectedDate) {
+                // Clear price display if no time or date selected
                 document.getElementById('totalPrice').textContent = 'Rp 0';
-                document.getElementById('priceBreakdown').innerHTML = '<div class="text-gray-500 text-sm">Pilih waktu untuk melihat harga</div>';
+                document.getElementById('priceBreakdown').innerHTML = '<div class="text-gray-500 text-sm">Pilih tanggal dan waktu untuk melihat harga</div>';
                 return;
             }
+            
+            // Debug weekend detection
+            const selectedDateObj = new Date(selectedDate);
+            const dayOfWeek = selectedDateObj.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+            const isWeekendJS = [0, 5, 6].includes(dayOfWeek); // Sunday, Friday, Saturday
+            console.log('Date debug:', {
+                selectedDate,
+                dayOfWeek,
+                dayName: selectedDateObj.toLocaleDateString('id-ID', {weekday: 'long'}),
+                isWeekendJS
+            });
+            
+            const requestData = {
+                start_time: selectedTime,
+                duration: selectedDuration,
+                sport_id: {{ $sport->id }},
+                date: selectedDate
+            };
+            
+            console.log('Sending price request:', requestData);
             
             fetch('{{ route("booking.get-price") }}', {
                 method: 'POST',
@@ -706,13 +794,18 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken
                 },
-                body: JSON.stringify({
-                    start_time: selectedTime,
-                    duration: selectedDuration
-                })
+                body: JSON.stringify(requestData)
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Price response data:', data);
+                
                 // Update total price
                 document.getElementById('totalPrice').textContent = 'Rp ' + data.total_price.toLocaleString('id-ID');
                 
@@ -742,6 +835,39 @@
                 console.error('Error calculating price:', error);
                 document.getElementById('totalPrice').textContent = 'Error';
                 document.getElementById('priceBreakdown').innerHTML = '<div class="text-red-500 text-sm">Error menghitung harga</div>';
+            });
+        }
+
+        // Update time slot prices based on selected date (weekend/weekday)
+        function updateTimeSlotPrices() {
+            if (!selectedDate) return;
+            
+            const selectedDateObj = new Date(selectedDate);
+            const dayOfWeek = selectedDateObj.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+            const isWeekendJS = [0, 5, 6].includes(dayOfWeek); // Sunday, Friday, Saturday
+            
+            console.log('Updating time slot prices for:', {
+                selectedDate,
+                dayOfWeek,
+                dayName: selectedDateObj.toLocaleDateString('id-ID', {weekday: 'long'}),
+                isWeekendJS
+            });
+            
+            // Update each time slot price display
+            document.querySelectorAll('input[name="start_time"]').forEach(input => {
+                const timeCard = input.nextElementSibling;
+                const priceElement = timeCard.querySelector('.text-xs.mt-1');
+                
+                if (priceElement && !priceElement.classList.contains('availability-status')) {
+                    const weekdayPrice = parseInt(input.dataset.weekdayPrice);
+                    const weekendPrice = parseInt(input.dataset.weekendPrice);
+                    const displayPrice = isWeekendJS ? weekendPrice : weekdayPrice;
+                    
+                    priceElement.textContent = 'Rp ' + displayPrice.toLocaleString('id-ID');
+                    
+                    // Also update the input's data-price attribute for other calculations
+                    input.dataset.price = displayPrice.toString();
+                }
             });
         }
 
