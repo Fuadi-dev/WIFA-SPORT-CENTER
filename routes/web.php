@@ -38,28 +38,30 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/midtrans/notification', [BookingController::class, 'midtransNotification'])->name('midtrans.notification');
 
 Route::middleware(['auth'])->group(function () {
-    Route::prefix('admin')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
-    });
-    
-    // Booking Routes
-    Route::prefix('booking')->group(function () {
-        Route::get('/', [BookingController::class, 'index'])->name('booking.index');
-        Route::get('/sport/{sport}', [BookingController::class, 'showCourt'])->name('booking.court');
-        Route::get('/schedule/{sport}/{court}', [BookingController::class, 'showSchedule'])->name('booking.schedule');
-        Route::get('/form', [BookingController::class, 'showBookingForm'])->name('booking.form');
-        Route::post('/store', [BookingController::class, 'store'])->name('booking.store');
-        Route::get('/confirmation/{booking}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
-        Route::post('/check-availability', [BookingController::class, 'checkAvailability'])->name('booking.check-availability');
-        Route::post('/get-price', [BookingController::class, 'getPriceForTimeRange'])->name('booking.get-price');
+    Route::middleware(['status:active'])->group(function (){
+        Route::prefix('admin')->group(function () {
+            Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+        });
         
-        // Midtrans payment routes
-        Route::get('/payment-status/{booking}', [BookingController::class, 'checkPaymentStatus'])->name('booking.payment-status');
+        // Booking Routes
+        Route::prefix('booking')->group(function () {
+            Route::get('/', [BookingController::class, 'index'])->name('booking.index');
+            Route::get('/sport/{sport}', [BookingController::class, 'showCourt'])->name('booking.court');
+            Route::get('/schedule/{sport}/{court}', [BookingController::class, 'showSchedule'])->name('booking.schedule');
+            Route::get('/form', [BookingController::class, 'showBookingForm'])->name('booking.form');
+            Route::post('/store', [BookingController::class, 'store'])->name('booking.store');
+            Route::get('/confirmation/{booking}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
+            Route::post('/check-availability', [BookingController::class, 'checkAvailability'])->name('booking.check-availability');
+            Route::post('/get-price', [BookingController::class, 'getPriceForTimeRange'])->name('booking.get-price');
+            
+            // Midtrans payment routes
+            Route::get('/payment-status/{booking}', [BookingController::class, 'checkPaymentStatus'])->name('booking.payment-status');
+            
+            // Legacy route
+            Route::get('/olahraga', [BookingController::class, 'olahraga']);
+        });
         
-        // Legacy route
-        Route::get('/olahraga', [BookingController::class, 'olahraga']);
+        // User bookings
+        Route::get('/my-bookings', [BookingController::class, 'myBookings'])->name('my-bookings');
     });
-    
-    // User bookings
-    Route::get('/my-bookings', [BookingController::class, 'myBookings'])->name('my-bookings');
 });

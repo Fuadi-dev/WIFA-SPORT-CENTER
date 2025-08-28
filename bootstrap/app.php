@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'midtrans/notification',
             'test/midtrans-webhook'
         ]);
+
+        $middleware->alias([
+            'status' => \App\Http\Middleware\StatusUser::class
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
