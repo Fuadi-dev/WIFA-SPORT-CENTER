@@ -13,22 +13,170 @@ class JadwalController extends Controller
 {
     public function index(Request $request)
     {
-        // Get all courts
-        $courts = Court::with('sport')->active()->orderBy('id')->get();
+        // Show Futsal, Volleyball, and Badminton courts
+        $allowedSports = ['Futsal', 'Voli', 'Badminton'];
+        $courts = Court::with('sport')
+            ->whereHas('sport', function($query) use ($allowedSports) {
+                $query->whereIn('name', $allowedSports);
+            })
+            ->active()
+            ->orderBy('id')
+            ->get();
+        
+        // Get selected date (default to today in Jakarta timezone)
+        $selectedDate = $request->get('date', now()->setTimezone('Asia/Jakarta')->format('Y-m-d'));
+        
+        // If this is an AJAX request, return time slot data
+        if ($request->ajax()) {
+            $selectedCourtId = $request->get('court_id');
+            $selectedCourt = Court::with('sport')->findOrFail($selectedCourtId);
+            
+            $timeSlots = $this->getTimeSlotsForDate($selectedCourt, $selectedDate);
+            
+            return response()->json([
+                'success' => true,
+                'timeSlots' => $timeSlots,
+                'court' => $selectedCourt
+            ]);
+        }
         
         // Get selected court (default to first court)
         $selectedCourtId = $request->get('court', $courts->first()->id ?? 1);
         $selectedCourt = Court::with('sport')->findOrFail($selectedCourtId);
         
-        // Get date filter (default to today)
-        $selectedDate = $request->get('date', now()->format('Y-m-d'));
-        $startDate = Carbon::parse($selectedDate);
-        $endDate = $startDate->copy()->addDays(6); // Show 7 days
+        // Get time slots for the selected date and court
+        $timeSlots = $this->getTimeSlotsForDate($selectedCourt, $selectedDate);
         
-        // Generate time slots for the selected court
-        $schedules = $this->generateScheduleData($selectedCourt, $startDate, $endDate);
+        return view('jadwal.index', compact('courts', 'selectedCourt', 'timeSlots', 'selectedDate'));
+    }
+    
+    private function getTimeSlotsForDate($court, $date)
+    {
+        $carbonDate = Carbon::parse($date);
+        $isWeekend = $carbonDate->isWeekend();
+        $timeSlots = [];
         
-        return view('jadwal.index', compact('courts', 'selectedCourt', 'schedules', 'selectedDate'));
+            /**
+     * Get time slots with pricing for a specific date
+     * Operating hours: 08:00 - 24:00
+     * Price categories: Morning (08-12), Afternoon (12-18), Evening (18-24)
+     * Weekend multiplier: 1.5x for Saturday & Sunday
+     */
+        for ($hour = 8; $hour < 24; $hour++) {
+            $startTime = sprintf('%02d:00', $hour);
+            $endTime = sprintf('%02d:00', $hour + 1);
+            
+            // Get price based on time and day
+            $priceInfo = $this->getPriceForTimeSlot($hour, $isWeekend);
+            
+            // Check if this time slot is available
+            $isBooked = $this->isTimeSlotBooked($court->id, $date, $startTime, $endTime);
+            $bookingInfo = $this->getBookingInfo($court->id, $date, $startTime, $endTime);
+            
+            $timeSlots[] = [
+                'time' => $startTime . ' - ' . $endTime,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'price' => $priceInfo['price'],
+                'price_category' => $priceInfo['category'],
+                'price_label' => $priceInfo['label'],
+                'is_available' => !$isBooked,
+                'is_booked' => $isBooked,
+                'booking_info' => $bookingInfo,
+                'date' => $date,
+                'court_id' => $court->id
+            ];
+        }
+        
+        return $timeSlots;
+    }
+    
+    private function getPriceForTimeSlot($hour, $isWeekend = false)
+    {
+        $basePrice = 0;
+        $category = '';
+        $label = '';
+        
+        if ($hour >= 8 && $hour < 12) {
+            $basePrice = 60000;
+            $category = 'morning';
+            $label = 'Pagi';
+        } elseif ($hour >= 12 && $hour < 18) {
+            $basePrice = 80000;
+            $category = 'afternoon';
+            $label = 'Siang';
+        } else {
+            $basePrice = 100000;
+            $category = 'evening';
+            $label = 'Malam';
+        }
+        
+        // Weekend pricing (add 20%)
+        if ($isWeekend) {
+            $basePrice = $basePrice * 1.2;
+            $label .= ' (Weekend)';
+        }
+        
+        return [
+            'price' => $basePrice,
+            'category' => $category,
+            'label' => $label
+        ];
+    }
+    
+    private function isTimeSlotBooked($courtId, $date, $startTime, $endTime)
+    {
+        $court = Court::find($courtId);
+        if (!$court) {
+            return false;
+        }
+        
+        // Use the Court model's availability check which includes conflict logic
+        return !$court->isAvailable($date, $startTime, $endTime);
+    }
+    
+    private function getBookingInfo($courtId, $date, $startTime, $endTime)
+    {
+        $court = Court::find($courtId);
+        if (!$court) {
+            return null;
+        }
+        
+        // Get all conflicting courts for this court
+        $conflictingCourts = $court->getConflictingCourts();
+        
+        // Find booking in any of the conflicting courts
+        $booking = Booking::whereIn('court_id', $conflictingCourts)
+            ->where('booking_date', $date)
+            ->where(function($query) use ($startTime, $endTime) {
+                $query->where(function($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '<=', $startTime)
+                      ->where('end_time', '>', $startTime);
+                })->orWhere(function($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '<', $endTime)
+                      ->where('end_time', '>=', $endTime);
+                })->orWhere(function($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '>=', $startTime)
+                      ->where('end_time', '<=', $endTime);
+                });
+            })
+            ->whereIn('status', ['confirmed', 'paid', 'pending_payment'])
+            ->with(['user', 'court.sport'])
+            ->first();
+            
+        if ($booking) {
+            return [
+                'team_name' => $booking->team_name,
+                'user_name' => $booking->user->name ?? 'N/A',
+                'notes' => $booking->notes,
+                'status' => $booking->status,
+                'total_amount' => $booking->total_amount,
+                'court_name' => $booking->court->name ?? 'N/A',
+                'sport_name' => $booking->court->sport->name ?? 'N/A'
+            ];
+        }
+        
+        return null;
     }
     
     private function generateScheduleData($court, $startDate, $endDate)
