@@ -227,14 +227,29 @@
                     <i class="fas fa-money-bill-wave mr-2 text-green-600"></i>Instruksi Pembayaran Tunai
                 </h2>
                 
-                <div class="bg-green-50 rounded-lg p-6">
+                <div class="bg-green-50 rounded-lg p-6 mb-6">
                     <h4 class="font-semibold text-gray-800 mb-4">Pembayaran di Tempat</h4>
-                    <ul class="list-disc list-inside text-gray-700 space-y-2">
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 mb-4">
                         <li>Datang 15 menit sebelum waktu booking</li>
                         <li>Bawa kode booking: <span class="font-mono font-bold bg-white px-2 py-1 rounded">{{ $booking->booking_code }}</span></li>
                         <li>Lakukan pembayaran di front desk</li>
                         <li>Dapatkan kunci/akses lapangan setelah pembayaran</li>
                     </ul>
+                    
+                    <!-- WhatsApp Confirmation Button for Cash Payment -->
+                    @if(session('whatsapp_url'))
+                    <div class="border-t pt-4">
+                        <p class="text-gray-700 mb-3 text-center font-semibold">Konfirmasi booking Anda melalui WhatsApp:</p>
+                        <a href="{{ session('whatsapp_url') }}" target="_blank" 
+                           class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 text-lg flex items-center justify-center">
+                            <i class="fab fa-whatsapp mr-2 text-xl"></i>
+                            Konfirmasi via WhatsApp
+                        </a>
+                        <p class="text-xs text-gray-600 text-center mt-2">
+                            Pesan sudah disiapkan otomatis dengan detail lengkap booking Anda
+                        </p>
+                    </div>
+                    @endif
                 </div>
             </div>
             @endif

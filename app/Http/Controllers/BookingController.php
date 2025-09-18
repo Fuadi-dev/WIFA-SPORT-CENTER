@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\MidtransService;
+use App\Services\WhatsAppService;
 
 class BookingController extends Controller
 {
@@ -313,8 +314,13 @@ class BookingController extends Controller
             return $this->handleMidtransPayment($booking);
         }
 
+        // Handle cash payment - generate WhatsApp URL
+        $whatsappService = new WhatsAppService();
+        $whatsappUrl = $whatsappService->generateBookingConfirmationUrl($booking);
+
         return redirect()->route('booking.confirmation', $booking->id)
-                        ->with('success', 'Pemesanan berhasil dibuat!');
+                        ->with('success', 'Pemesanan berhasil dibuat!')
+                        ->with('whatsapp_url', $whatsappUrl);
     }
 
     // Handle Midtrans Payment

@@ -18,7 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'status' => \App\Http\Middleware\StatusUser::class
+            'status' => \App\Http\Middleware\StatusUser::class,
+            'role' => \App\Http\Middleware\Role::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

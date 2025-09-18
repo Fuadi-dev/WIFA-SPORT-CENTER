@@ -162,6 +162,9 @@
                                 <i class="fas fa-check-circle mr-1"></i>Langsung Dikonfirmasi
                             </div>
                             <div class="text-xs text-green-600 mt-1">
+                                <i class="fab fa-whatsapp mr-1"></i>Konfirmasi otomatis via WhatsApp
+                            </div>
+                            <div class="text-xs text-green-600 mt-1">
                                 Status: Confirmed
                             </div>
                         </div>

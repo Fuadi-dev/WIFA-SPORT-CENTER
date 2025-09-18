@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\Booking;
+use Carbon\Carbon;
 
 class WhatsAppService
 {
@@ -119,5 +121,67 @@ class WhatsAppService
             ]);
             return false;
         }
+    }
+    
+    /**
+     * Generate WhatsApp URL for booking confirmation
+     */
+    public function generateBookingConfirmationUrl(Booking $booking): string
+    {
+        $message = $this->generateBookingMessage($booking);
+        $encodedMessage = urlencode($message);
+        
+        return "https://wa.me/6282328605554?text={$encodedMessage}";
+    }
+    
+    /**
+     * Generate booking confirmation message
+     */
+    private function generateBookingMessage(Booking $booking): string
+    {
+        $date = Carbon::parse($booking->booking_date)->format('d M Y');
+        $day = Carbon::parse($booking->booking_date)->locale('id')->dayName;
+        $time = Carbon::parse($booking->start_time)->format('H:i') . ' - ' . Carbon::parse($booking->end_time)->format('H:i');
+        
+        // Calculate duration
+        $start = Carbon::parse($booking->start_time);
+        $end = Carbon::parse($booking->end_time);
+        $duration = $start->diffInHours($end);
+        
+        $message = "🏟️ *KONFIRMASI BOOKING WIFA SPORT CENTER*\n\n";
+        $message .= "Assalamualaikum, saya ingin konfirmasi booking dengan detail sebagai berikut:\n\n";
+        $message .= "📋 *Detail Booking:*\n";
+        $message .= "• Olahraga: {$booking->sport->name}\n";
+        $message .= "• Lapangan: {$booking->court->name}\n";
+        $message .= "• Tanggal: {$day}, {$date}\n";
+        $message .= "• Waktu: {$time} WIB\n";
+        $message .= "• Durasi: {$duration} jam\n";
+        $message .= "• Total Harga: Rp " . number_format($booking->total_price, 0, ',', '.') . "\n";
+        $message .= "• Nama Tim: {$booking->team_name}\n";
+        $message .= "• Nama Pemesan: {$booking->user->name}\n";
+        
+        if ($booking->notes) {
+            $message .= "• Catatan: {$booking->notes}\n";
+        }
+        
+        $message .= "\n� *Metode Pembayaran: TUNAI*\n";
+        $message .= "Saya akan melakukan pembayaran tunai langsung di tempat pada hari H.\n\n";
+        
+        $message .= "🙏 Mohon konfirmasi ketersediaan jadwal dan booking ini.\n";
+        $message .= "Terima kasih atas pelayanannya.\n\n";
+        $message .= "Wassalamualaikum\n\n";
+        $message .= "---\n";
+        $message .= "Booking ID: {$booking->booking_code}";
+        
+        return $message;
+    }
+    
+    /**
+     * Generate simple WhatsApp URL with custom message
+     */
+    public function generateCustomUrl(string $message): string
+    {
+        $encodedMessage = urlencode($message);
+        return "https://wa.me/6282328605554?text={$encodedMessage}";
     }
 }

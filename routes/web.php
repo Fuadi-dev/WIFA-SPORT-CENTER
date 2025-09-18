@@ -39,8 +39,8 @@ Route::post('/midtrans/notification', [BookingController::class, 'midtransNotifi
 
 Route::middleware(['auth'])->group(function () {
     Route::middleware(['status:active'])->group(function (){
-        Route::prefix('admin')->group(function () {
-            Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+        Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+            Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
         });
         
         // Booking Routes
