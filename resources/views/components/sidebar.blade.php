@@ -18,13 +18,13 @@
                 <h3 class="text-amber-300 text-xs uppercase tracking-wider font-semibold mb-3 px-3">Menu Utama</h3>
                 
                 <!-- Dashboard -->
-                <a href="{{ route('admin.dashboard') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin.dashboard') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-5 mr-3"></i>
                     Dashboard
                 </a>
                 
                 <!-- Bookings Management -->
-                <a href="{{ route('admin.bookings.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.bookings.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ route('admin.bookings.index') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.bookings.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-calendar-check w-5 mr-3"></i>
                     Kelola Booking
                     @if(isset($pendingBookings) && $pendingBookings > 0)
@@ -32,20 +32,26 @@
                     @endif
                 </a>
                 
+                <!-- Events Management -->
+                <a href="{{ route('admin.events.index') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.events.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                    <i class="fas fa-trophy w-5 mr-3"></i>
+                    Kelola Event
+                </a>
+                
                 <!-- Courts Management -->
-                <a href="{{ route('admin.courts.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.courts.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin.courts.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.courts.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-map-marked-alt w-5 mr-3"></i>
                     Kelola Lapangan
                 </a>
                 
                 <!-- Sports Management -->
-                <a href="{{ route('admin.sports.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.sports.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin.sports.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.sports.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-futbol w-5 mr-3"></i>
                     Kelola Olahraga
                 </a>
                 
                 <!-- Users Management -->
-                <a href="{{ route('admin.users.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.users.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin.users.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.users.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-users w-5 mr-3"></i>
                     Kelola User
                 </a>
@@ -55,13 +61,13 @@
                 <h3 class="text-amber-300 text-xs uppercase tracking-wider font-semibold mb-3 px-3">Laporan</h3>
                 
                 <!-- Reports -->
-                <a href="{{ route('admin.reports.bookings') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin.reports.bookings') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-chart-bar w-5 mr-3"></i>
                     Laporan Booking
                 </a>
                 
                 <!-- Financial Reports -->
-                <a href="{{ route('admin.reports.financial') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.financial') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin.reports.financial') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.financial') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-money-bill-wave w-5 mr-3"></i>
                     Laporan Keuangan
                 </a>
@@ -71,13 +77,13 @@
                 <h3 class="text-amber-300 text-xs uppercase tracking-wider font-semibold mb-3 px-3">Pengaturan</h3>
                 
                 <!-- Settings -->
-                <a href="{{ route('admin.settings') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.settings') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin.settings') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.settings') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-cog w-5 mr-3"></i>
                     Pengaturan
                 </a>
                 
                 <!-- Back to Website -->
-                <a href="{{ route('home') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium text-amber-100 hover:text-white">
+                <a href="{{ url('home') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium text-amber-100 hover:text-white">
                     <i class="fas fa-globe w-5 mr-3"></i>
                     Kembali ke Website
                 </a>

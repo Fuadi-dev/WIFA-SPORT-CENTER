@@ -21,27 +21,27 @@
 
     <!-- Hero Section -->
     <section id="hero" class="relative h-screen overflow-hidden">
-        @include('pages.hero')
+        @include('users.pages.hero')
     </section>
 
     <!-- Services Section -->
     <section id="services" class="py-20 bg-gradient-to-br from-amber-50 via-cream-100 to-amber-100 relative overflow-hidden">
-        @include('pages.services')
+        @include('users.pages.services')
     </section>
     
     <!-- About Section -->
     <section id="about" class="py-20 bg-gradient-to-br from-amber-100 via-cream-100 to-amber-50 relative overflow-hidden">
-        @include('pages.about')
+        @include('users.pages.about')
     </section>
 
     <!-- Facilities Section -->
     <section id="facilities" class="py-20 bg-gradient-to-br from-cream-100 via-white to-amber-50 relative overflow-hidden">
-        @include('pages.facilities')
+        @include('users.pages.facilities')
     </section>
 
     <!-- Contact Section -->
     <section id="contact" class="py-20 bg-gradient-to-br from-amber-950 via-amber-900 to-black text-white relative overflow-hidden">
-        @include('pages.contact')
+        @include('users.pages.contact')
     </section>
 
     <!-- Footer -->

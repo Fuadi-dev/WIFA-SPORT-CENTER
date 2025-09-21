@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Court;
 use App\Models\Booking;
 use App\Models\Sport;
+use App\Models\Event;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -13,7 +14,7 @@ class JadwalController extends Controller
 {
     public function index(Request $request)
     {
-        // Show Futsal, Volleyball, and Badminton courts
+        // Show schedules for Futsal, Volleyball, and Badminton courts
         $allowedSports = ['Futsal', 'Voli', 'Badminton'];
         $courts = Court::with('sport')
             ->whereHas('sport', function($query) use ($allowedSports) {
@@ -47,7 +48,7 @@ class JadwalController extends Controller
         // Get time slots for the selected date and court
         $timeSlots = $this->getTimeSlotsForDate($selectedCourt, $selectedDate);
         
-        return view('jadwal.index', compact('courts', 'selectedCourt', 'timeSlots', 'selectedDate'));
+        return view('users.jadwal.index', compact('courts', 'selectedCourt', 'timeSlots', 'selectedDate'));
     }
     
     private function getTimeSlotsForDate($court, $date)
@@ -56,12 +57,47 @@ class JadwalController extends Controller
         $isWeekend = $carbonDate->isWeekend();
         $timeSlots = [];
         
-            /**
-     * Get time slots with pricing for a specific date
-     * Operating hours: 08:00 - 24:00
-     * Price categories: Morning (08-12), Afternoon (12-18), Evening (18-24)
-     * Weekend multiplier: 1.5x for Saturday & Sunday
-     */
+        // Check if there's an event on this date
+        $event = $court->getEventForDate($date);
+        
+        // If there's an event, show all time slots as blocked with event info
+        if ($event) {
+            for ($hour = 8; $hour < 24; $hour++) {
+                $startTime = sprintf('%02d:00', $hour);
+                $endTime = sprintf('%02d:00', $hour + 1);
+                
+                $timeSlots[] = [
+                    'time' => $startTime . ' - ' . $endTime,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'price' => 0,
+                    'price_category' => 'event',
+                    'price_label' => 'Event',
+                    'is_available' => false,
+                    'is_booked' => false,
+                    'is_event' => true,
+                    'event_info' => [
+                        'title' => $event->title,
+                        'event_code' => $event->event_code,
+                        'status' => $event->status,
+                        'sport_name' => $event->sport->name,
+                        'court_name' => $event->court->name,
+                        'description' => $event->description
+                    ],
+                    'booking_info' => null,
+                    'date' => $date,
+                    'court_id' => $court->id
+                ];
+            }
+            return $timeSlots;
+        }
+
+        /**
+         * Get time slots with pricing for a specific date
+         * Operating hours: 08:00 - 24:00
+         * Price categories: Morning (08-12), Afternoon (12-18), Evening (18-24)
+         * Weekend multiplier: 1.5x for Saturday & Sunday
+         */
         for ($hour = 8; $hour < 24; $hour++) {
             $startTime = sprintf('%02d:00', $hour);
             $endTime = sprintf('%02d:00', $hour + 1);
@@ -82,6 +118,8 @@ class JadwalController extends Controller
                 'price_label' => $priceInfo['label'],
                 'is_available' => !$isBooked,
                 'is_booked' => $isBooked,
+                'is_event' => false,
+                'event_info' => null,
                 'booking_info' => $bookingInfo,
                 'date' => $date,
                 'court_id' => $court->id
@@ -290,5 +328,10 @@ class JadwalController extends Controller
         } else {
             return 'evening';
         }
+    }
+    
+    private function formatPrice($price)
+    {
+        return 'Rp ' . number_format($price, 0, ',', '.');
     }
 }

@@ -19,6 +19,8 @@ class DashboardController extends Controller
         $today = Carbon::today();
         $thisMonth = Carbon::now()->startOfMonth();
         $lastMonth = Carbon::now()->subMonth();
+        $startOfWeek = Carbon::now()->startOfWeek();
+        $endOfWeek = Carbon::now()->endOfWeek();
         
         // Basic statistics
         $stats = [
@@ -33,20 +35,34 @@ class DashboardController extends Controller
         
         // Today's statistics
         $todayStats = [
-            'bookings' => Booking::whereDate('date', $today)->count(),
-            'revenue' => Booking::whereDate('date', $today)
+            'bookings' => Booking::whereDate('booking_date', $today)->count(),
+            'revenue' => Booking::whereDate('booking_date', $today)
                 ->where('status', '!=', 'cancelled')
                 ->sum('total_price'),
             'new_users' => User::whereDate('created_at', $today)->count(),
         ];
         
-        // This month statistics
-        $monthStats = [
-            'bookings' => Booking::whereDate('date', '>=', $thisMonth)->count(),
-            'revenue' => Booking::whereDate('date', '>=', $thisMonth)
+                // This week's statistics  
+        $thisWeekStats = [
+            'bookings' => Booking::whereBetween('booking_date', [$startOfWeek, $endOfWeek])->count(),
+            'revenue' => Booking::whereBetween('booking_date', [$startOfWeek, $endOfWeek])
                 ->where('status', '!=', 'cancelled')
                 ->sum('total_price'),
-            'new_users' => User::whereDate('created_at', '>=', $thisMonth)->count(),
+            'new_users' => User::whereBetween('created_at', [$startOfWeek, $endOfWeek])->count(),
+        ];
+        
+        // This month's statistics
+        $monthStats = [
+            'bookings' => Booking::whereMonth('booking_date', $thisMonth->month)
+                ->whereYear('booking_date', $thisMonth->year)
+                ->count(),
+            'revenue' => Booking::whereMonth('booking_date', $thisMonth->month)
+                ->whereYear('booking_date', $thisMonth->year)
+                ->where('status', '!=', 'cancelled')
+                ->sum('total_price'),
+            'new_users' => User::whereMonth('created_at', $thisMonth->month)
+                ->whereYear('created_at', $thisMonth->year)
+                ->count(),
         ];
         
         // Recent bookings (last 5)
@@ -77,8 +93,8 @@ class DashboardController extends Controller
         $revenueData = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            $revenue = Booking::whereYear('date', $date->year)
-                ->whereMonth('date', $date->month)
+            $revenue = Booking::whereYear('booking_date', $date->year)
+                ->whereMonth('booking_date', $date->month)
                 ->where('status', '!=', 'cancelled')
                 ->sum('total_price');
             
@@ -103,6 +119,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'stats',
             'todayStats', 
+            'thisWeekStats',
             'monthStats',
             'recentBookings',
             'popularSports',

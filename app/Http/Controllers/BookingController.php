@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Sport;
 use App\Models\Court;
 use App\Models\Booking;
+use App\Models\Event;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,7 @@ class BookingController extends Controller
     public function index()
     {
         $sports = Sport::active()->get();
-        return view('booking.choose-sport', compact('sports'));
+        return view('users.booking.choose-sport', compact('sports'));
     }
 
     // Step 2: Choose Court (for badminton) and Date/Time
@@ -31,9 +32,8 @@ class BookingController extends Controller
         if ($sport->name !== 'Badminton') {
             $court = $courts->first();
             return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id]);
-        }
-        
-        return view('booking.choose-court', compact('sport', 'courts'));
+        }   
+        return view('users.booking.choose-court', compact('sport', 'courts'));
     }
 
     // Step 3: Choose Schedule
@@ -66,7 +66,7 @@ class BookingController extends Controller
             ];
         }
         
-        return view('booking.choose-schedule', compact('sport', 'court', 'dates', 'timeSlots'));
+        return view('users.booking.choose-schedule', compact('sport', 'court', 'dates', 'timeSlots'));
     }
 
     // Get price based on hour and sport
@@ -165,7 +165,7 @@ class BookingController extends Controller
         return $totalPrice;
     }
 
-    // Check availability (AJAX)
+        // Check availability (AJAX)
     public function checkAvailability(Request $request)
     {
         $courtId = $request->court_id;
@@ -174,9 +174,35 @@ class BookingController extends Controller
         $endTime = $request->end_time;
         
         $court = Court::findOrFail($courtId);
+        
+        // Check for events first - this should block all booking
+        $event = $court->getEventForDate($date);
+        if ($event) {
+            return response()->json([
+                'available' => false,
+                'reason' => 'event',
+                'message' => 'Event: ' . $event->title,
+                'event' => [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'event_date' => $event->event_date->format('Y-m-d'),
+                    'start_time' => $event->start_time,
+                    'end_time' => $event->end_time,
+                    'event_code' => $event->event_code,
+                    'status' => $event->status,
+                    'sport_name' => $event->sport->name,
+                    'court_name' => $event->court->name
+                ]
+            ]);
+        }
+        
         $isAvailable = $court->isAvailable($date, $startTime, $endTime);
         
-        return response()->json(['available' => $isAvailable]);
+        return response()->json([
+            'available' => $isAvailable,
+            'reason' => $isAvailable ? 'available' : 'booking_conflict',
+            'message' => $isAvailable ? 'Tersedia' : 'Sudah Dibooking'
+        ]);
     }
 
     // Get price for time range (AJAX)
@@ -234,7 +260,7 @@ class BookingController extends Controller
         ]);
     }
 
-    // Step 4: Fill Booking Details
+        // Step 4: Fill Booking Details
     public function showBookingForm(Request $request)
     {
         $sport = Sport::findOrFail($request->sport_id);
@@ -246,13 +272,20 @@ class BookingController extends Controller
         // Validate that all required parameters are present
         if (!$date || !$startTime || !$endTime) {
             return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
-                           ->withErrors(['error' => 'Data booking tidak lengkap. Silakan pilih ulang jadwal.']);
+                           ->with('error', 'Data booking tidak lengkap. Silakan pilih ulang jadwal.');
+        }
+        
+        // Check for events first
+        $event = $court->getEventForDate($date);
+        if ($event) {
+            return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
+                           ->with('error', "Lapangan tidak tersedia pada tanggal tersebut karena ada event: {$event->title} ({$event->event_code})");
         }
         
         // IMPORTANT: Double check availability for the entire time range before showing form
         if (!$court->isAvailable($date, $startTime, $endTime)) {
             return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
-                           ->withErrors(['error' => 'Maaf, slot waktu yang dipilih sudah tidak tersedia. Silakan pilih jadwal lain.']);
+                           ->with('error', 'Slot waktu sudah tidak tersedia. Silakan pilih waktu lain.');
         }
         
         // Calculate duration and price with time-based pricing
@@ -261,7 +294,7 @@ class BookingController extends Controller
         $duration = $start->diffInHours($end);
         $totalPrice = $this->calculateTotalPrice($startTime, $endTime, $sport, $date);
         
-        return view('booking.booking-form', compact('sport', 'court', 'date', 'startTime', 'endTime', 'duration', 'totalPrice'));
+        return view('users.booking.booking-form', compact('sport', 'court', 'date', 'startTime', 'endTime', 'duration', 'totalPrice'));
     }
 
     // Step 5: Process Booking
@@ -281,6 +314,13 @@ class BookingController extends Controller
 
         // Double check availability
         $court = Court::findOrFail($request->court_id);
+        
+        // Check for events first
+        $event = $court->getEventForDate($request->date);
+        if ($event) {
+            return back()->withErrors(['error' => "Lapangan tidak tersedia pada tanggal tersebut karena ada event: {$event->title} ({$event->event_code})"]);
+        }
+        
         if (!$court->isAvailable($request->date, $request->start_time, $request->end_time)) {
             return back()->withErrors(['error' => 'Slot waktu sudah tidak tersedia.']);
         }
@@ -370,7 +410,7 @@ class BookingController extends Controller
             abort(403);
         }
 
-        return view('booking.confirmation', compact('booking'));
+        return view('users.booking.confirmation', compact('booking'));
     }
 
     // User's bookings
@@ -382,7 +422,7 @@ class BookingController extends Controller
                           ->orderBy('start_time', 'desc')
                           ->paginate(10);
 
-        return view('booking.my-bookings', compact('bookings'));
+        return view('users.booking.my-bookings', compact('bookings'));
     }
 
     // Midtrans payment notification webhook
@@ -434,11 +474,5 @@ class BookingController extends Controller
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
-    }
-
-    // Legacy method for old route
-    public function olahraga()
-    {
-        return redirect()->route('booking.index');
     }
 }

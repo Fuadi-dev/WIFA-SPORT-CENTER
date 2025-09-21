@@ -86,7 +86,9 @@
                 Pendapatan 6 Bulan Terakhir
             </h3>
         </div>
-        <canvas id="revenueChart" height="300"></canvas>
+        <div class="chart-container" style="position: relative; height: 220px;">
+            <canvas id="revenueChart"></canvas>
+        </div>
     </div>
     
     <!-- Booking Trends -->
@@ -97,7 +99,9 @@
                 Trend Booking 7 Hari Terakhir
             </h3>
         </div>
-        <canvas id="bookingChart" height="300"></canvas>
+        <div class="chart-container" style="position: relative; height: 220px;">
+            <canvas id="bookingChart"></canvas>
+        </div>
     </div>
 </div>
 

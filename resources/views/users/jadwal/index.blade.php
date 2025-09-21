@@ -31,8 +31,20 @@
             cursor: not-allowed;
         }
         
+        .time-slot.event {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            border: 2px solid #6366f1;
+            color: #3730a3;
+            cursor: pointer;
+        }
+        
         .time-slot.booked:hover {
             transform: none;
+        }
+        
+        .time-slot.event:hover {
+            background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%);
+            transform: translateY(-2px);
         }
         
         .court-tab {
@@ -193,6 +205,10 @@
                     <span class="inline-flex items-center">
                         <div class="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
                         Dibooking
+                    </span>
+                    <span class="inline-flex items-center">
+                        <div class="w-3 h-3 bg-indigo-400 rounded-full mr-2"></div>
+                        Event
                     </span>
                 </div>
             </div>
@@ -442,24 +458,48 @@
             
             timeSlots.forEach(slot => {
                 const slotElement = document.createElement('div');
-                slotElement.className = `time-slot ${slot.is_available ? 'available' : 'booked'} p-4 rounded-xl text-center`;
-                slotElement.onclick = slot.is_available ? 
-                    () => showSlotDetails(slot) : 
-                    () => showBookingDetails(slot);
+                
+                // Determine class based on slot type
+                let slotClass = 'time-slot ';
+                if (slot.is_event) {
+                    slotClass += 'event';
+                } else if (slot.is_available) {
+                    slotClass += 'available';
+                } else {
+                    slotClass += 'booked';
+                }
+                slotClass += ' p-4 rounded-xl text-center';
+                slotElement.className = slotClass;
+                
+                // Set click handler based on slot type
+                if (slot.is_event) {
+                    slotElement.onclick = () => showEventDetails(slot);
+                } else if (slot.is_available) {
+                    slotElement.onclick = () => showSlotDetails(slot);
+                } else {
+                    slotElement.onclick = () => showBookingDetails(slot);
+                }
                 
                 slotElement.innerHTML = `
                     <div class="font-bold text-lg mb-1">${slot.start_time}</div>
                     <div class="text-sm opacity-80 mb-2">${slot.price_label}</div>
                     <div class="text-xs font-semibold">
-                        ${slot.is_available ? 
-                            'Rp ' + new Intl.NumberFormat('id-ID').format(slot.price) : 
-                            (slot.booking_info?.team_name || 'Dibooking')
+                        ${slot.is_event ? 
+                            slot.event_info.title :
+                            slot.is_available ? 
+                                'Rp ' + new Intl.NumberFormat('id-ID').format(slot.price) : 
+                                (slot.booking_info?.team_name || 'Dibooking')
                         }
                     </div>
-                    ${!slot.is_available && slot.booking_info ? 
+                    ${slot.is_event ? 
                         `<div class="text-xs mt-1 opacity-60">
-                            <i class="fas fa-user mr-1"></i>${slot.booking_info.user_name || 'N/A'}
-                        </div>` : ''
+                            <i class="fas fa-trophy mr-1"></i>${slot.event_info.event_code}
+                        </div>` : 
+                        (!slot.is_available && slot.booking_info ? 
+                            `<div class="text-xs mt-1 opacity-60">
+                                <i class="fas fa-user mr-1"></i>${slot.booking_info.user_name || 'N/A'}
+                            </div>` : ''
+                        )
                     }
                 `;
                 
@@ -510,6 +550,44 @@
                     // Redirect to booking page with pre-selected values
                     window.location.href = `{{ route('booking.index') }}?court=${selectedCourtId}&date=${selectedDate}&time=${slot.start_time}`;
                 }
+            });
+        }
+        
+        function showEventDetails(slot) {
+            if (!slot.event_info) {
+                return;
+            }
+            
+            const event = slot.event_info;
+            Swal.fire({
+                title: `<i class="fas fa-trophy text-indigo-600"></i> ${event.title}`,
+                html: `
+                    <div class="text-left space-y-3">
+                        <div class="bg-indigo-50 p-3 rounded-lg">
+                            <p class="text-sm"><strong>Kode Event:</strong> ${event.event_code}</p>
+                            <p class="text-sm"><strong>Status:</strong> <span class="capitalize">${event.status.replace('_', ' ')}</span></p>
+                        </div>
+                        <div>
+                            <p class="text-sm"><strong>Olahraga:</strong> ${event.sport_name}</p>
+                            <p class="text-sm"><strong>Lapangan:</strong> ${event.court_name}</p>
+                        </div>
+                        ${event.description ? `
+                            <div>
+                                <p class="text-sm"><strong>Deskripsi:</strong></p>
+                                <p class="text-sm text-gray-600">${event.description}</p>
+                            </div>
+                        ` : ''}
+                        <div class="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                            <p class="text-sm text-amber-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Lapangan tidak tersedia untuk booking reguler pada hari ini karena ada event.
+                            </p>
+                        </div>
+                    </div>
+                `,
+                width: 500,
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#6366f1'
             });
         }
         

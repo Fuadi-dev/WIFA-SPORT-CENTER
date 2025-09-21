@@ -897,6 +897,7 @@
             if (!selectedDate) return;
             
             console.log(`Checking availability for ${selectedDate} with duration ${selectedDuration}`);
+            console.log(`Court ID: {{ $court->id }}`);
             
             // Create a cache key for this specific date-duration combination
             const cacheKey = `${selectedDate}-${selectedDuration}`;
@@ -940,6 +941,8 @@
 
                 pendingRequests++;
                 
+                console.log(`Checking availability for time slot ${startTime}-${endTime}`);
+                
                 fetch('{{ route("booking.check-availability") }}', {
                     method: 'POST',
                     headers: {
@@ -955,11 +958,21 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    console.log(`Response for ${startTime}-${endTime}:`, data);
+                    
                     const result = {
                         available: data.available,
-                        reason: data.available ? 'available' : 'booked',
-                        message: data.available ? 'Tersedia' : 'Sudah Dibooking'
+                        reason: data.reason || (data.available ? 'available' : 'booked'),
+                        message: data.available ? 'Tersedia' : 
+                                data.reason === 'event' ? `Event: ${data.event?.title || 'Ada Event'}` :
+                                'Sudah Dibooking',
+                        event: data.event || null
                     };
+                    
+                    // Debug logging untuk event detection
+                    if (data.event) {
+                        console.log('Event detected for time slot:', startTime, data.event);
+                    }
                     
                     availabilityResults.set(startTime, result);
                     updateTimeSlotDisplay(input, result);
@@ -1020,8 +1033,18 @@
             } else {
                 let iconClass = 'fas fa-times-circle';
                 let statusClass = 'availability-status text-xs mt-1 text-red-500';
+                let message = result.message;
                 
-                if (result.reason === 'exceeds_hours') {
+                if (result.reason === 'event') {
+                    iconClass = 'fas fa-trophy';
+                    statusClass = 'availability-status text-xs mt-1 text-purple-600';
+                    if (result.event && result.event.title) {
+                        message = `Event: ${result.event.title}`;
+                    } else {
+                        message = 'Ada Event';
+                    }
+                    console.log('Event detected for time slot:', input.value, result.event);
+                } else if (result.reason === 'exceeds_hours') {
                     iconClass = 'fas fa-clock';
                     statusClass = 'availability-status text-xs mt-1 text-orange-500';
                 } else if (result.reason === 'error') {
@@ -1029,7 +1052,7 @@
                     statusClass = 'availability-status text-xs mt-1 text-yellow-600';
                 }
                 
-                status.innerHTML = `<i class="${iconClass} mr-1"></i>${result.message}`;
+                status.innerHTML = `<i class="${iconClass} mr-1"></i>${message}`;
                 status.className = statusClass;
                 input.disabled = true;
                 card.classList.add('opacity-50', 'cursor-not-allowed');

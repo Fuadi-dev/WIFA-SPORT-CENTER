@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - WIFA Sport Center Admin</title>
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .admin-sidebar {
             transition: all 0.3s ease;
@@ -193,6 +195,79 @@
                     sidebarOverlay.classList.add('hidden');
                 });
             }
+        });
+    </script>
+
+    <!-- SweetAlert for Flash Messages -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Success message
+            @if(session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: '{{ session('success') }}',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    position: 'top-end'
+                });
+            @endif
+
+            // Error message
+            @if(session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: '{{ session('error') }}',
+                    showConfirmButton: true,
+                    confirmButtonColor: '#d33'
+                });
+            @endif
+
+            // Warning message
+            @if(session('warning'))
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan!',
+                    text: '{{ session('warning') }}',
+                    showConfirmButton: true,
+                    confirmButtonColor: '#f59e0b'
+                });
+            @endif
+
+            // Info message
+            @if(session('info'))
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Informasi',
+                    text: '{{ session('info') }}',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    toast: true,
+                    position: 'top-end'
+                });
+            @endif
+
+            // Validation errors
+            @if($errors->any())
+                let errorMessages = [];
+                @foreach($errors->all() as $error)
+                    errorMessages.push('{{ $error }}');
+                @endforeach
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kesalahan Validasi',
+                    html: '<ul style="text-align: left; padding-left: 20px;">' +
+                          errorMessages.map(error => '<li>' + error + '</li>').join('') +
+                          '</ul>',
+                    showConfirmButton: true,
+                    confirmButtonColor: '#d33'
+                });
+            @endif
         });
     </script>
     

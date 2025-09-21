@@ -32,6 +32,11 @@ class Court extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -41,6 +46,16 @@ class Court extends Model
     {
         // Logic untuk availability check berdasarkan jenis court
         $conflictingCourts = $this->getConflictingCourts();
+        
+        // Check for any event conflicts first (events block entire day)
+        $eventConflict = Event::whereIn('court_id', $conflictingCourts)
+            ->where('event_date', $date)
+            ->whereIn('status', ['open_registration', 'registration_closed', 'ongoing'])
+            ->exists();
+            
+        if ($eventConflict) {
+            return false; // Court not available due to event
+        }
         
         // Check for any booking conflicts in courts that would conflict with this booking
         return !Booking::whereIn('court_id', $conflictingCourts)
@@ -117,6 +132,40 @@ class Court extends Model
         
         // Default: only check this court
         return [$this->id];
+    }
+
+    /**
+     * Get event information for a specific date
+     */
+    public function getEventForDate($date)
+    {
+        $conflictingCourts = $this->getConflictingCourts();
+        
+        $event = Event::whereIn('court_id', $conflictingCourts)
+            ->where('event_date', $date)
+            ->whereIn('status', ['open_registration', 'registration_closed', 'ongoing'])
+            ->with(['sport', 'court'])
+            ->first();
+        
+        // Auto-update event status if found
+        if ($event) {
+            $event->checkAndUpdateStatus();
+            
+            // Re-check if event is still active after status update
+            if (!in_array($event->status, ['open_registration', 'registration_closed', 'ongoing'])) {
+                return null; // Event is no longer active
+            }
+        }
+        
+        return $event;
+    }
+
+    /**
+     * Check if court has an event on specific date
+     */
+    public function hasEventOnDate($date)
+    {
+        return $this->getEventForDate($date) !== null;
     }
 
     /**
