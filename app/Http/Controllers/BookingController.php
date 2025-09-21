@@ -31,17 +31,14 @@ class BookingController extends Controller
         // For sports other than badminton, redirect directly to schedule
         if ($sport->name !== 'Badminton') {
             $court = $courts->first();
-            return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id]);
+            return redirect()->route('booking.schedule', ['sport' => $sport->slug, 'court' => $court->slug]);
         }   
         return view('users.booking.choose-court', compact('sport', 'courts'));
     }
 
     // Step 3: Choose Schedule
-    public function showSchedule(Request $request, $sportId, $courtId)
+    public function showSchedule(Request $request, Sport $sport, Court $court)
     {
-        $sport = Sport::findOrFail($sportId);
-        $court = Court::findOrFail($courtId);
-        
         // Get the next 30 days
         $dates = collect();
         for ($i = 0; $i < 30; $i++) {
@@ -88,6 +85,7 @@ class BookingController extends Controller
             // 08:00 - 12:00
             switch ($sportName) {
                 case 'futsal':
+                case 'basket':
                     $price = $isWeekend ? 65000 : 60000;
                     break;
                 case 'badminton':
@@ -104,6 +102,7 @@ class BookingController extends Controller
             // 12:00 - 18:00
             switch ($sportName) {
                 case 'futsal':
+                case 'basket':
                     $price = $isWeekend ? 85000 : 80000;
                     break;
                 case 'badminton':
@@ -120,6 +119,7 @@ class BookingController extends Controller
             // 18:00 - 00:00
             switch ($sportName) {
                 case 'futsal':
+                case 'basket':
                     $price = $isWeekend ? 105000 : 100000;
                     break;
                 case 'badminton':
@@ -271,20 +271,20 @@ class BookingController extends Controller
         
         // Validate that all required parameters are present
         if (!$date || !$startTime || !$endTime) {
-            return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
+            return redirect()->route('booking.schedule', ['sport' => $sport->slug, 'court' => $court->slug])
                            ->with('error', 'Data booking tidak lengkap. Silakan pilih ulang jadwal.');
         }
         
         // Check for events first
         $event = $court->getEventForDate($date);
         if ($event) {
-            return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
+            return redirect()->route('booking.schedule', ['sport' => $sport->slug, 'court' => $court->slug])
                            ->with('error', "Lapangan tidak tersedia pada tanggal tersebut karena ada event: {$event->title} ({$event->event_code})");
         }
         
         // IMPORTANT: Double check availability for the entire time range before showing form
         if (!$court->isAvailable($date, $startTime, $endTime)) {
-            return redirect()->route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id])
+            return redirect()->route('booking.schedule', ['sport' => $sport->slug, 'court' => $court->slug])
                            ->with('error', 'Slot waktu sudah tidak tersedia. Silakan pilih waktu lain.');
         }
         

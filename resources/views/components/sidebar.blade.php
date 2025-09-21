@@ -18,7 +18,7 @@
                 <h3 class="text-amber-300 text-xs uppercase tracking-wider font-semibold mb-3 px-3">Menu Utama</h3>
                 
                 <!-- Dashboard -->
-                <a href="{{ url('admin.dashboard') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ url('admin/dashboard') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-5 mr-3"></i>
                     Dashboard
                 </a>

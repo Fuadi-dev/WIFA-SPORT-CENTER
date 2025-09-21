@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('sports', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // futsal, basket, voli, badminton
+            $table->string('slug')->unique()->nullable(); // futsal, basketball, volleyball, badminton
             $table->string('icon')->nullable(); // icon class or image
             $table->text('description')->nullable();
             $table->decimal('price_per_hour', 10, 2)->default(0);

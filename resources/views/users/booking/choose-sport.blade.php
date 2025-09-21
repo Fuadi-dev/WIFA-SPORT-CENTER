@@ -50,20 +50,9 @@
                     <!-- Description -->
                     <p class="text-gray-600 mb-4 text-sm">{{ $sport->description }}</p>
                     
-                    <!-- Price -->
-                    <div class="bg-amber-50 rounded-lg p-3 mb-6">
-                        <span class="text-sm text-gray-600">Harga per jam</span>
-                        <div class="text-lg font-bold text-amber-600">
-                            <div class="space-y-1">
-                                <div class="text-green-600">06:00-12:00: Rp 60.000</div>
-                                <div class="text-yellow-600">12:00-18:00: Rp 80.000</div>
-                                <div class="text-red-600">18:00-24:00: Rp 100.000</div>
-                            </div>
-                        </div>
-                    </div>
                     
                     <!-- Select Button -->
-                    <a href="{{ route('booking.court', $sport->id) }}" 
+                    <a href="{{ route('booking.court', $sport->slug) }}" 
                        class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 inline-block">
                         <i class="fas fa-arrow-right mr-2"></i>Pilih {{ $sport->name }}
                     </a>
@@ -84,7 +73,7 @@
                 <div>
                     <h3 class="font-semibold text-amber-700 mb-3">📅 Jadwal Operasional</h3>
                     <ul class="text-gray-600 space-y-1">
-                        <li>Senin - Minggu: 06:00 - 24:00</li>
+                        <li>Senin - Minggu: 08:00 - 24:00</li>
                         <li>Booking minimal 1 jam</li>
                         <li>Maksimal booking 3 jam berturut-turut</li>
                     </ul>

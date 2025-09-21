@@ -73,6 +73,19 @@
     </div>
 </div>
 
+<!-- Header Actions -->
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">Daftar Booking</h2>
+        <p class="text-gray-600">Kelola semua booking fasilitas olahraga</p>
+    </div>
+    <button onclick="openManualBookingModal()" 
+            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-lg">
+        <i class="fas fa-plus mr-2"></i>
+        Tambah Booking Manual
+    </button>
+</div>
+
 <!-- Filters & Search -->
 <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
     <form method="GET" action="{{ route('admin.bookings.index') }}" class="space-y-4">
@@ -295,7 +308,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex items-center justify-between mb-4">
@@ -345,3 +358,582 @@
     });
 </script>
 @endpush
+
+<!-- Manual Booking Modal -->
+<div id="manualBookingModal" class="fixed inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm z-[9999] hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-semibold text-gray-800">
+                        <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                        Tambah Booking Manual
+                    </h3>
+                    <button onclick="closeManualBookingModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="manualBookingForm">
+                    @csrf
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        <!-- Left Column: User & Booking Info -->
+                        <div class="space-y-6">
+                            <!-- User Selection -->
+                            <div class="bg-blue-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-blue-800 mb-4">
+                                    <i class="fas fa-user mr-2"></i>Informasi Penyewa
+                                </h4>
+                                
+                                <div class="mb-4">
+                                    <label class="flex items-center cursor-pointer mb-3">
+                                        <input type="radio" name="user_type" value="existing" class="mr-2" checked>
+                                        <span class="font-medium">Pilih User Existing</span>
+                                    </label>
+                                    <div id="existingUserDiv">
+                                        <input type="text" id="userSearch" placeholder="Cari nama atau email user..." 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2">
+                                        <select id="userSelect" name="user_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Pilih user...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="flex items-center cursor-pointer mb-3">
+                                        <input type="radio" name="user_type" value="new" class="mr-2">
+                                        <span class="font-medium">Buat User Baru (Guest)</span>
+                                    </label>
+                                    <div id="newUserDiv" class="hidden space-y-3">
+                                        <input type="text" name="user_name" placeholder="Nama Lengkap" 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <input type="email" name="user_email" placeholder="Email" 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <input type="tel" name="user_phone" placeholder="Nomor HP" 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Team Details -->
+                            <div class="bg-amber-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-amber-800 mb-4">
+                                    <i class="fas fa-users mr-2"></i>Detail Booking
+                                </h4>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Tim/Instansi/Individu *</label>
+                                        <input type="text" name="team_name" required 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                               placeholder="Masukkan nama tim atau instansi">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Penanggung Jawab</label>
+                                        <input type="text" name="contact_person" 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                               placeholder="Nama penanggung jawab">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                                        <textarea name="notes" rows="3" 
+                                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                                  placeholder="Catatan tambahan..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column: Schedule Selection -->
+                        <div class="space-y-6">
+                            <!-- Sport & Court Selection -->
+                            <div class="bg-green-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-green-800 mb-4">
+                                    <i class="fas fa-map-marker-alt mr-2"></i>Pilih Fasilitas
+                                </h4>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Olahraga *</label>
+                                        <select name="sport_id" id="sportSelect" required onchange="loadCourtsForBooking(this.value)"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                            <option value="">Pilih olahraga...</option>
+                                            @foreach($sports as $sport)
+                                                <option value="{{ $sport->id }}">{{ $sport->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Lapangan *</label>
+                                        <select name="court_id" id="courtSelect" required disabled
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                            <option value="">Pilih olahraga terlebih dahulu</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Date & Time Selection -->
+                            <div class="bg-purple-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-purple-800 mb-4">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Pilih Jadwal
+                                </h4>
+                                
+                                <!-- Date Selection (Horizontal Scroll like user page) -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-3">Pilih Tanggal *</label>
+                                    <div class="overflow-x-auto pb-2" id="dateSelection">
+                                        <div class="flex space-x-2 min-w-max">
+                                            @for($i = 0; $i < 14; $i++)
+                                                @php
+                                                    $date = now()->addDays($i);
+                                                    $isToday = $date->isToday();
+                                                    $isWeekend = in_array($date->dayOfWeek, [0, 5, 6]);
+                                                @endphp
+                                                <label class="cursor-pointer">
+                                                    <input type="radio" name="date" value="{{ $date->format('Y-m-d') }}" 
+                                                           class="hidden" {{ $isToday ? 'checked' : '' }}>
+                                                    <div class="date-card w-20 h-24 border-2 rounded-lg p-2 text-center transition-all duration-200 
+                                                                {{ $isToday ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white hover:border-purple-300' }}">
+                                                        <div class="text-xs text-gray-500 mb-1">
+                                                            {{ $date->format('D') }}
+                                                        </div>
+                                                        <div class="text-lg font-bold text-gray-800">
+                                                            {{ $date->format('j') }}
+                                                        </div>
+                                                        <div class="text-xs text-gray-500">
+                                                            {{ $date->format('M') }}
+                                                        </div>
+                                                        @if($isWeekend)
+                                                            <div class="text-xs text-orange-600 font-medium mt-1">Weekend</div>
+                                                        @endif
+                                                    </div>
+                                                </label>
+                                            @endfor
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Time Selection -->
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Waktu Mulai *</label>
+                                        <select name="start_time" id="startTimeSelect" required onchange="updateEndTimeOptions()"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                            <option value="">Pilih waktu mulai...</option>
+                                            @for($hour = 6; $hour <= 23; $hour++)
+                                                <option value="{{ sprintf('%02d:00', $hour) }}">
+                                                    {{ sprintf('%02d:00', $hour) }}
+                                                </option>
+                                            @endfor
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Waktu Selesai *</label>
+                                        <select name="end_time" id="endTimeSelect" required disabled
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                            <option value="">Pilih waktu mulai terlebih dahulu</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Price Preview -->
+                                <div class="bg-white rounded-lg p-4 border border-purple-200">
+                                    <div class="text-sm text-gray-600 mb-2">Estimasi Harga:</div>
+                                    <div id="pricePreview" class="text-xl font-bold text-purple-800">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
+                        <button type="button" onclick="closeManualBookingModal()" 
+                                class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                            <i class="fas fa-times mr-2"></i>Batal
+                        </button>
+                        <button type="submit" id="submitBookingBtn" disabled
+                                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-save mr-2"></i>Simpan Booking
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Manual Booking Modal Functions
+let selectedUsers = [];
+let allUsers = [];
+
+function openManualBookingModal() {
+    document.getElementById('manualBookingModal').classList.remove('hidden');
+    loadUsers();
+    resetForm();
+}
+
+function closeManualBookingModal() {
+    document.getElementById('manualBookingModal').classList.add('hidden');
+}
+
+function resetForm() {
+    document.getElementById('manualBookingForm').reset();
+    document.querySelector('input[name="user_type"][value="existing"]').checked = true;
+    toggleUserType();
+    
+    // Reset court select
+    const courtSelect = document.getElementById('courtSelect');
+    courtSelect.innerHTML = '<option value="">Pilih olahraga terlebih dahulu</option>';
+    courtSelect.disabled = true;
+    
+    // Reset end time select
+    const endTimeSelect = document.getElementById('endTimeSelect');
+    endTimeSelect.innerHTML = '<option value="">Pilih waktu mulai terlebih dahulu</option>';
+    endTimeSelect.disabled = true;
+    
+    // Reset price preview
+    document.getElementById('pricePreview').textContent = '-';
+    
+    // Reset submit button
+    document.getElementById('submitBookingBtn').disabled = true;
+}
+
+function loadUsers() {
+    fetch('{{ route("admin.bookings.users") }}')
+        .then(response => response.json())
+        .then(data => {
+            allUsers = data.users || [];
+            updateUserSelect(allUsers);
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+        });
+}
+
+function updateUserSelect(users) {
+    const userSelect = document.getElementById('userSelect');
+    userSelect.innerHTML = '<option value="">Pilih user...</option>';
+    
+    users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.name} (${user.email})`;
+        userSelect.appendChild(option);
+    });
+}
+
+// User search functionality
+document.getElementById('userSearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const filteredUsers = allUsers.filter(user => 
+        user.name.toLowerCase().includes(searchTerm) || 
+        user.email.toLowerCase().includes(searchTerm)
+    );
+    updateUserSelect(filteredUsers);
+});
+
+// User type toggle
+document.querySelectorAll('input[name="user_type"]').forEach(radio => {
+    radio.addEventListener('change', toggleUserType);
+});
+
+function toggleUserType() {
+    const userType = document.querySelector('input[name="user_type"]:checked').value;
+    const existingUserDiv = document.getElementById('existingUserDiv');
+    const newUserDiv = document.getElementById('newUserDiv');
+    
+    if (userType === 'existing') {
+        existingUserDiv.classList.remove('hidden');
+        newUserDiv.classList.add('hidden');
+        // Clear new user inputs
+        document.querySelector('input[name="user_name"]').value = '';
+        document.querySelector('input[name="user_email"]').value = '';
+        document.querySelector('input[name="user_phone"]').value = '';
+    } else {
+        existingUserDiv.classList.add('hidden');
+        newUserDiv.classList.remove('hidden');
+        // Clear user select
+        document.getElementById('userSelect').value = '';
+    }
+    checkFormValidity();
+}
+
+// Load courts based on sport selection
+async function loadCourtsForBooking(sportId) {
+    const courtSelect = document.getElementById('courtSelect');
+    
+    if (!sportId) {
+        courtSelect.innerHTML = '<option value="">Pilih olahraga terlebih dahulu</option>';
+        courtSelect.disabled = true;
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/admin/bookings/courts-by-sport/${sportId}`);
+        const data = await response.json();
+        
+        courtSelect.innerHTML = '<option value="">Pilih lapangan...</option>';
+        data.courts.forEach(court => {
+            const option = document.createElement('option');
+            option.value = court.id;
+            option.textContent = court.name;
+            courtSelect.appendChild(option);
+        });
+        courtSelect.disabled = false;
+        checkFormValidity();
+    } catch (error) {
+        console.error('Error loading courts:', error);
+        courtSelect.innerHTML = '<option value="">Error loading courts</option>';
+    }
+}
+
+// Update end time options based on start time
+function updateEndTimeOptions() {
+    const startTime = document.getElementById('startTimeSelect').value;
+    const endTimeSelect = document.getElementById('endTimeSelect');
+    
+    if (!startTime) {
+        endTimeSelect.innerHTML = '<option value="">Pilih waktu mulai terlebih dahulu</option>';
+        endTimeSelect.disabled = true;
+        return;
+    }
+    
+    const startHour = parseInt(startTime.split(':')[0]);
+    endTimeSelect.innerHTML = '<option value="">Pilih waktu selesai...</option>';
+    
+    // Generate end time options (1-8 hours after start time, max 24:00)
+    for (let i = 1; i <= 8; i++) {
+        const endHour = startHour + i;
+        if (endHour <= 24) {
+            const endTimeValue = sprintf('%02d:00', endHour);
+            const option = document.createElement('option');
+            option.value = endTimeValue;
+            option.textContent = endTimeValue + ` (${i} jam)`;
+            endTimeSelect.appendChild(option);
+        }
+    }
+    
+    endTimeSelect.disabled = false;
+    checkFormValidity();
+}
+
+// Helper function for zero padding
+function sprintf(format, number) {
+    return format.replace('%02d', number.toString().padStart(2, '0'));
+}
+
+// Date selection handling
+document.querySelectorAll('input[name="date"]').forEach(input => {
+    input.addEventListener('change', function() {
+        // Update visual selection
+        document.querySelectorAll('.date-card').forEach(card => {
+            card.classList.remove('border-purple-500', 'bg-purple-100');
+            card.classList.add('border-gray-200', 'bg-white');
+        });
+        
+        this.nextElementSibling.classList.remove('border-gray-200', 'bg-white');
+        this.nextElementSibling.classList.add('border-purple-500', 'bg-purple-100');
+        
+        calculatePrice();
+        checkFormValidity();
+    });
+});
+
+// Price calculation
+function calculatePrice() {
+    const startTime = document.getElementById('startTimeSelect').value;
+    const endTime = document.getElementById('endTimeSelect').value;
+    const selectedDate = document.querySelector('input[name="date"]:checked')?.value;
+    const courtId = document.getElementById('courtSelect').value;
+    const sportId = document.getElementById('sportSelect').value;
+    
+    if (!startTime || !endTime || !selectedDate || !courtId || !sportId) {
+        document.getElementById('pricePreview').textContent = '-';
+        return;
+    }
+    
+    // Calculate duration
+    const startHour = parseInt(startTime.split(':')[0]);
+    const endHour = parseInt(endTime.split(':')[0]);
+    const duration = endHour - startHour;
+    
+    // Check if weekend (Friday, Saturday, Sunday)
+    const dateObj = new Date(selectedDate);
+    const isWeekend = [0, 5, 6].includes(dateObj.getDay());
+    
+    // Get sport info for pricing
+    const sportSelect = document.getElementById('sportSelect');
+    const sportName = sportSelect.options[sportSelect.selectedIndex].text;
+    
+    let basePrice = 0;
+    
+    // Price calculation based on price list image
+    if (sportName === 'Futsal' || sportName === 'Basket') {
+        if (startHour >= 8 && startHour < 12) {
+            // Morning: 08:00-12:00
+            basePrice = isWeekend ? 65000 : 60000;
+        } else if (startHour >= 12 && startHour < 18) {
+            // Afternoon: 12:00-18:00  
+            basePrice = isWeekend ? 85000 : 80000;
+        } else {
+            // Evening: 18:00-00:00
+            basePrice = isWeekend ? 105000 : 100000;
+        }
+    } else if (sportName === 'Badminton') {
+        if (startHour >= 8 && startHour < 12) {
+            // Morning: 08:00-12:00
+            basePrice = isWeekend ? 35000 : 30000;
+        } else if (startHour >= 12 && startHour < 18) {
+            // Afternoon: 12:00-18:00
+            basePrice = isWeekend ? 40000 : 35000;
+        } else {
+            // Evening: 18:00-00:00
+            basePrice = isWeekend ? 45000 : 40000;
+        }
+    } else if (sportName === 'Voli') {
+        if (startHour >= 8 && startHour < 12) {
+            // Morning: 08:00-12:00
+            basePrice = isWeekend ? 55000 : 50000;
+        } else if (startHour >= 12 && startHour < 18) {
+            // Afternoon: 12:00-18:00
+            basePrice = isWeekend ? 65000 : 60000;
+        } else {
+            // Evening: 18:00-00:00
+            basePrice = isWeekend ? 75000 : 70000;
+        }
+    }
+    
+    const totalPrice = basePrice * duration;
+    
+    document.getElementById('pricePreview').textContent = 
+        'Rp ' + totalPrice.toLocaleString('id-ID') + ` (${duration} jam)`;
+}
+
+// End time change handler
+document.getElementById('endTimeSelect').addEventListener('change', function() {
+    calculatePrice();
+    checkFormValidity();
+});
+
+// Form validation
+function checkFormValidity() {
+    const userType = document.querySelector('input[name="user_type"]:checked').value;
+    const teamName = document.querySelector('input[name="team_name"]').value;
+    const sportId = document.getElementById('sportSelect').value;
+    const courtId = document.getElementById('courtSelect').value;
+    const selectedDate = document.querySelector('input[name="date"]:checked');
+    const startTime = document.getElementById('startTimeSelect').value;
+    const endTime = document.getElementById('endTimeSelect').value;
+    
+    let userValid = false;
+    if (userType === 'existing') {
+        userValid = document.getElementById('userSelect').value !== '';
+    } else {
+        const userName = document.querySelector('input[name="user_name"]').value;
+        const userEmail = document.querySelector('input[name="user_email"]').value;
+        const userPhone = document.querySelector('input[name="user_phone"]').value;
+        userValid = userName && userEmail && userPhone;
+    }
+    
+    const isValid = userValid && teamName && sportId && courtId && selectedDate && startTime && endTime;
+    
+    document.getElementById('submitBookingBtn').disabled = !isValid;
+}
+
+// Add event listeners for form validation
+document.getElementById('userSelect').addEventListener('change', checkFormValidity);
+document.querySelector('input[name="team_name"]').addEventListener('input', checkFormValidity);
+document.querySelector('input[name="user_name"]').addEventListener('input', checkFormValidity);
+document.querySelector('input[name="user_email"]').addEventListener('input', checkFormValidity);
+document.querySelector('input[name="user_phone"]').addEventListener('input', checkFormValidity);
+document.getElementById('sportSelect').addEventListener('change', function() {
+    checkFormValidity();
+    calculatePrice(); // Recalculate price when sport changes
+});
+document.getElementById('courtSelect').addEventListener('change', function() {
+    checkFormValidity();
+    calculatePrice(); // Recalculate price when court changes
+});
+document.getElementById('startTimeSelect').addEventListener('change', checkFormValidity);
+
+// Form submission
+document.getElementById('manualBookingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = document.getElementById('submitBookingBtn');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+    
+    fetch('{{ route("admin.bookings.manual.store") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: 'Booking manual berhasil dibuat',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true
+            }).then(() => {
+                closeManualBookingModal();
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: data.message || 'Terjadi kesalahan saat membuat booking',
+                confirmButtonColor: '#d33'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'Terjadi kesalahan sistem',
+            confirmButtonColor: '#d33'
+        });
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('manualBookingModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeManualBookingModal();
+    }
+});
+
+// Initialize first date as selected
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-select today's date
+    const todayInput = document.querySelector('input[name="date"]:checked');
+    if (todayInput) {
+        calculatePrice();
+        checkFormValidity();
+    }
+});
+</script>

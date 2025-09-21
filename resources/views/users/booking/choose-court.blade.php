@@ -65,7 +65,7 @@
                     <p class="text-gray-600 mb-6 text-sm">{{ $court->description }}</p>
                     
                     <!-- Select Button -->
-                    <a href="{{ route('booking.schedule', ['sport' => $sport->id, 'court' => $court->id]) }}" 
+                    <a href="{{ route('booking.schedule', ['sport' => $sport->slug, 'court' => $court->slug]) }}" 
                        class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 inline-block">
                         <i class="fas fa-calendar-alt mr-2"></i>Pilih Jadwal
                     </a>

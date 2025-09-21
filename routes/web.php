@@ -8,6 +8,8 @@ use App\Http\Controllers\MainController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Admin\BookingController as ManagementBookingController;
+use App\Http\Controllers\Admin\EventController as ManagementEventController;
+use App\Http\Controllers\EventController;
 
 Route::get('/',[MainController::class, 'index'])->name('home');
 
@@ -46,25 +48,29 @@ Route::middleware(['auth'])->group(function () {
             
             // Admin Booking Management
             Route::prefix('bookings')->name('admin.bookings.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Admin\BookingController::class, 'index'])->name('index');
-                Route::get('/{booking}', [App\Http\Controllers\Admin\BookingController::class, 'show'])->name('show');
-                Route::patch('/{booking}/status', [App\Http\Controllers\Admin\BookingController::class, 'updateStatus'])->name('updateStatus');
-                Route::delete('/{booking}', [App\Http\Controllers\Admin\BookingController::class, 'destroy'])->name('destroy');
-                Route::get('/export/data', [App\Http\Controllers\Admin\BookingController::class, 'export'])->name('export');
+                Route::get('/', [ManagementBookingController::class, 'index'])->name('index');
+                Route::post('/manual', [ManagementBookingController::class, 'storeManualBooking'])->name('manual.store');
+                Route::get('/users', [ManagementBookingController::class, 'getUsers'])->name('users');
+                Route::post('/check-availability', [BookingController::class, 'checkAvailability'])->name('check-availability');
+                Route::get('/courts-by-sport/{sport}', [ManagementBookingController::class, 'getCourtsBySport'])->name('courts-by-sport');
+                Route::get('/{booking}', [ManagementBookingController::class, 'show'])->name('show');
+                Route::patch('/{booking}/status', [ManagementBookingController::class, 'updateStatus'])->name('updateStatus');
+                Route::delete('/{booking}', [ManagementBookingController::class, 'destroy'])->name('destroy');
+                Route::get('/export/data', [ManagementBookingController::class, 'export'])->name('export');
             });
             
             // Admin Event Management
             Route::prefix('events')->name('admin.events.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Admin\EventController::class, 'index'])->name('index');
-                Route::get('/create', [App\Http\Controllers\Admin\EventController::class, 'create'])->name('create');
-                Route::post('/', [App\Http\Controllers\Admin\EventController::class, 'store'])->name('store');
-                Route::get('/courts-by-sport/{sport}', [App\Http\Controllers\Admin\EventController::class, 'getCourtsBySport'])->name('courts-by-sport');
-                Route::get('/{event}', [App\Http\Controllers\Admin\EventController::class, 'show'])->name('show');
-                Route::get('/{event}/edit', [App\Http\Controllers\Admin\EventController::class, 'edit'])->name('edit');
-                Route::patch('/{event}', [App\Http\Controllers\Admin\EventController::class, 'update'])->name('update');
-                Route::delete('/{event}', [App\Http\Controllers\Admin\EventController::class, 'destroy'])->name('destroy');
-                Route::get('/{event}/registrations', [App\Http\Controllers\Admin\EventController::class, 'registrations'])->name('registrations');
-                Route::patch('/{event}/registrations/{registration}/status', [App\Http\Controllers\Admin\EventController::class, 'updateRegistrationStatus'])->name('updateRegistrationStatus');
+                Route::get('/', [ManagementEventController::class, 'index'])->name('index');
+                Route::get('/create', [ManagementEventController::class, 'create'])->name('create');
+                Route::post('/', [ManagementEventController::class, 'store'])->name('store');
+                Route::get('/courts-by-sport/{sport}', [ManagementEventController::class, 'getCourtsBySport'])->name('courts-by-sport');
+                Route::get('/{event}', [ManagementEventController::class, 'show'])->name('show');
+                Route::get('/{event}/edit', [ManagementEventController::class, 'edit'])->name('edit');
+                Route::patch('/{event}', [ManagementEventController::class, 'update'])->name('update');
+                Route::delete('/{event}', [ManagementEventController::class, 'destroy'])->name('destroy');
+                Route::get('/{event}/registrations', [ManagementEventController::class, 'registrations'])->name('registrations');
+                Route::patch('/{event}/registrations/{registration}/status', [ManagementEventController::class, 'updateRegistrationStatus'])->name('updateRegistrationStatus');
             });
             
         });
@@ -72,8 +78,8 @@ Route::middleware(['auth'])->group(function () {
         // Booking Routes
         Route::prefix('booking')->group(function () {
             Route::get('/', [BookingController::class, 'index'])->name('booking.index');
-            Route::get('/sport/{sport}', [BookingController::class, 'showCourt'])->name('booking.court');
-            Route::get('/schedule/{sport}/{court}', [BookingController::class, 'showSchedule'])->name('booking.schedule');
+            Route::get('/sport/{sport:slug}', [BookingController::class, 'showCourt'])->name('booking.court');
+            Route::get('/schedule/{sport:slug}/{court:slug}', [BookingController::class, 'showSchedule'])->name('booking.schedule');
             Route::get('/form', [BookingController::class, 'showBookingForm'])->name('booking.form');
             Route::post('/store', [BookingController::class, 'store'])->name('booking.store');
             Route::get('/confirmation/{booking}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
@@ -92,12 +98,12 @@ Route::middleware(['auth'])->group(function () {
         
         // User Event Routes
         Route::prefix('events')->name('events.')->group(function () {
-            Route::get('/', [App\Http\Controllers\EventController::class, 'index'])->name('index');
-            Route::get('/{event}', [App\Http\Controllers\EventController::class, 'show'])->name('show');
-            Route::get('/{event}/register', [App\Http\Controllers\EventController::class, 'register'])->name('register');
-            Route::post('/{event}/register', [App\Http\Controllers\EventController::class, 'storeRegistration'])->name('storeRegistration');
-            Route::get('/my/registrations', [App\Http\Controllers\EventController::class, 'myRegistrations'])->name('myRegistrations');
-            Route::patch('/registrations/{registration}/cancel', [App\Http\Controllers\EventController::class, 'cancelRegistration'])->name('cancelRegistration');
+            Route::get('/', [EventController::class, 'index'])->name('index');
+            Route::get('/{event}', [EventController::class, 'show'])->name('show');
+            Route::get('/{event}/register', [EventController::class, 'register'])->name('register');
+            Route::post('/{event}/register', [EventController::class, 'storeRegistration'])->name('storeRegistration');
+            Route::get('/my/registrations', [EventController::class, 'myRegistrations'])->name('myRegistrations');
+            Route::patch('/registrations/{registration}/cancel', [EventController::class, 'cancelRegistration'])->name('cancelRegistration');
         });
     });
 });

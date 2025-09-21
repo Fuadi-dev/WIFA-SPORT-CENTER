@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Sport;
 use App\Models\Court;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class BookingController extends Controller
@@ -84,7 +85,11 @@ class BookingController extends Controller
                 ->sum('total_price'),
         ];
         
-        return view('admin.bookings.index', compact('bookings', 'stats'));
+        // Get sports and courts for modal
+        $sports = Sport::all();
+        $courts = Court::all();
+        
+        return view('admin.bookings.index', compact('bookings', 'stats', 'sports', 'courts'));
     }
     
     public function show(Booking $booking)
@@ -133,6 +138,114 @@ class BookingController extends Controller
             ->with('success', "Status booking berhasil diubah dari '{$oldStatus}' menjadi '{$request->status}'");
     }
     
+    public function storeManualBooking(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'user_name' => 'required_without:user_id|string|max:255',
+            'user_phone' => 'required_without:user_id|string|max:20',
+            'user_email' => 'required_without:user_id|email|max:255',
+            'team_name' => 'required|string|max:255',
+            'sport_id' => 'required|exists:sports,id',
+            'court_id' => 'required|exists:courts,id',
+            'date' => 'required|date|after_or_equal:today',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'contact_person' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            // Get or create user
+            if ($request->user_id) {
+                $user = User::findOrFail($request->user_id);
+            } else {
+                // Create guest user for manual booking
+                $user = User::create([
+                    'name' => $request->user_name,
+                    'email' => $request->user_email,
+                    'phone_number' => $request->user_phone,
+                    'password' => bcrypt('guest123'), // Default password for guest users
+                    'role' => 'user',
+                    'date_of_birth' => '1990-01-01', // Default date
+                    'gender' => 'other', // Default gender
+                    'email_verified_at' => now(),
+                ]);
+            }
+
+            // Calculate duration and price
+            $startTime = Carbon::createFromFormat('H:i', $request->start_time);
+            $endTime = Carbon::createFromFormat('H:i', $request->end_time);
+            $duration = $endTime->diffInHours($startTime);
+
+            $sport = Sport::findOrFail($request->sport_id);
+            $court = Court::findOrFail($request->court_id);
+
+            // Check if date is weekend
+            $bookingDate = Carbon::parse($request->date);
+            $isWeekend = in_array($bookingDate->dayOfWeek, [0, 5, 6]); // Friday, Saturday, Sunday
+
+            $pricePerHour = $isWeekend ? $court->weekend_price : $court->weekday_price;
+            $totalPrice = $pricePerHour * $duration;
+
+            // Generate unique booking code
+            $bookingCode = 'BK-' . date('Ymd') . '-' . str_pad(Booking::whereDate('created_at', today())->count() + 1, 3, '0', STR_PAD_LEFT);
+
+            // Create booking
+            $booking = Booking::create([
+                'booking_code' => $bookingCode,
+                'user_id' => $user->id,
+                'sport_id' => $request->sport_id,
+                'court_id' => $request->court_id,
+                'team_name' => $request->team_name,
+                'contact_person' => $request->contact_person ?: $user->name,
+                'booking_date' => $request->date,
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time,
+                'duration' => $duration,
+                'price_per_hour' => $pricePerHour,
+                'total_price' => $totalPrice,
+                'payment_method' => 'cash',
+                'status' => 'confirmed', // Manual booking langsung confirmed
+                'notes' => $request->notes,
+                'admin_notes' => 'Booking manual oleh admin: ' . Auth::user()->name,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Booking manual berhasil dibuat',
+                'booking' => $booking
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat booking: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getUsers(Request $request)
+    {
+        $users = User::where('role', 'user')
+                    ->select('id', 'name', 'email', 'phone_number')
+                    ->orderBy('name')
+                    ->get();
+        
+        return response()->json([
+            'users' => $users
+        ]);
+    }
+
+    public function getCourtsBySport(Sport $sport)
+    {
+        $courts = Court::where('sport_id', $sport->id)->get();
+        
+        return response()->json([
+            'courts' => $courts
+        ]);
+    }
+
     public function export(Request $request)
     {
         // This method can be implemented later for CSV/Excel export

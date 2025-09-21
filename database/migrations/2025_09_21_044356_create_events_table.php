@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('event_code')->unique(); // EVT-001, EVT-002, etc
             $table->string('title');
+            $table->string('slug')->unique()->nullable();
             $table->text('description');
             $table->string('poster')->nullable(); // path to poster image
             $table->foreignId('sport_id')->constrained('sports')->onDelete('cascade');

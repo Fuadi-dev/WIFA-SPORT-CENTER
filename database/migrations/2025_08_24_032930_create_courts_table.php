@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // Lapangan Futsal, Lapangan Voli, Badminton A, Badminton B
             $table->foreignId('sport_id')->constrained('sports')->onDelete('cascade');
+            $table->string('slug')->unique()->nullable(); // futsal-field, volleyball-court, badminton-a, badminton-b
             $table->string('type')->nullable(); // court_type (A, B for badminton)
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);

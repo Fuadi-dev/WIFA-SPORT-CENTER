@@ -11,6 +11,7 @@ class Sport extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'icon',
         'description',
         'price_per_hour',
