@@ -38,20 +38,8 @@
                     Kelola Event
                 </a>
                 
-                <!-- Courts Management -->
-                <a href="{{ url('admin.courts.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.courts.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
-                    <i class="fas fa-map-marked-alt w-5 mr-3"></i>
-                    Kelola Lapangan
-                </a>
-                
-                <!-- Sports Management -->
-                <a href="{{ url('admin.sports.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.sports.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
-                    <i class="fas fa-futbol w-5 mr-3"></i>
-                    Kelola Olahraga
-                </a>
-                
                 <!-- Users Management -->
-                <a href="{{ url('admin.users.index') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.users.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ route('admin.users.index') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.users.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-users w-5 mr-3"></i>
                     Kelola User
                 </a>
@@ -61,7 +49,7 @@
                 <h3 class="text-amber-300 text-xs uppercase tracking-wider font-semibold mb-3 px-3">Laporan</h3>
                 
                 <!-- Reports -->
-                <a href="{{ url('admin.reports.bookings') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                <a href="{{ route('admin.reports.bookings') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.bookings') ? 'active' : 'text-amber-100 hover:text-white' }}">
                     <i class="fas fa-chart-bar w-5 mr-3"></i>
                     Laporan Booking
                 </a>
@@ -83,7 +71,7 @@
                 </a>
                 
                 <!-- Back to Website -->
-                <a href="{{ url('home') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium text-amber-100 hover:text-white">
+                <a href="{{ url('/') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium text-amber-100 hover:text-white">
                     <i class="fas fa-globe w-5 mr-3"></i>
                     Kembali ke Website
                 </a>

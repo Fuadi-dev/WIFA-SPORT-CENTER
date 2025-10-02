@@ -24,9 +24,9 @@
                         Jadwal
                         <span class="nav-underline absolute bottom-0 left-0 h-0.5 bg-amber-400 transition-all duration-300 {{ request()->is('jadwal') ? 'w-full' : 'w-0 group-hover:w-full' }}"></span>
                     </a>
-                    <a href="{{ url('/event') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm {{ request()->is('event') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="contact">
+                    <a href="{{ route('events.index') }}" class="nav-link text-white hover:text-amber-300 px-4 py-2 rounded-md text-base font-semibold tracking-wide transition-all duration-300 hover:bg-amber-800/20 relative group text-shadow-sm {{ request()->routeIs('events.*') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="contact">
                         Acara
-                        <span class="nav-underline absolute bottom-0 left-0 h-0.5 bg-amber-400 transition-all duration-300 {{ request()->is('event') ? 'w-full' : 'w-0 group-hover:w-full' }}"></span>
+                        <span class="nav-underline absolute bottom-0 left-0 h-0.5 bg-amber-400 transition-all duration-300 {{ request()->routeIs('events.*') ? 'w-full' : 'w-0 group-hover:w-full' }}"></span>
                     </a>
                 </div>
 
@@ -98,7 +98,7 @@
             <a href="{{ url('/jadwal') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm {{ request()->is('jadwal') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="about">
                 Jadwal
             </a>
-            <a href="{{ url('/event') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm {{ request()->is('event') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="contact">
+            <a href="{{ route('events.index') }}" class="nav-link text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 text-shadow-sm {{ request()->routeIs('events.*') ? 'text-amber-300 bg-amber-800/30' : '' }}" data-section="contact">
                 Acara
             </a>
             

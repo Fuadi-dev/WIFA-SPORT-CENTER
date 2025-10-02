@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         // Seed Sports and Courts
         $this->call([
             SportsAndCourtsSeeder::class,
+            EventSeeder::class,
         ]);
     }
 }

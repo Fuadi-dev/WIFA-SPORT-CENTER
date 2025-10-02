@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('admin.layouts.admin')
 
 @section('title', 'Kelola Booking')
 @section('page-title', 'Kelola Booking')

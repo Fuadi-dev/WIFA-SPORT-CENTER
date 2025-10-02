@@ -4,11 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
 
     protected $fillable = [
         'event_code',
@@ -46,7 +56,34 @@ class Event extends Model
             if (empty($event->event_code)) {
                 $event->event_code = self::generateEventCode();
             }
+            if (empty($event->slug)) {
+                $event->slug = self::generateSlug($event->title);
+            }
         });
+
+        static::updating(function ($event) {
+            // Update slug if title changes
+            if ($event->isDirty('title') && empty($event->slug)) {
+                $event->slug = self::generateSlug($event->title);
+            }
+        });
+    }
+
+    /**
+     * Generate unique slug
+     */
+    public static function generateSlug($title)
+    {
+        $slug = Str::slug($title);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (self::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 
     /**

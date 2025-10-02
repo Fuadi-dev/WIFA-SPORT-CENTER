@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventRegistration;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,7 +16,10 @@ class EventController extends Controller
     public function index(Request $request)
     {
         $query = Event::with(['sport', 'court'])
-            ->whereIn('status', ['open_registration', 'ongoing'])
+            ->withCount(['registrations' => function($query) {
+                $query->where('status', '!=', 'cancelled');
+            }])
+            ->whereIn('status', ['open_registration', 'registration_closed', 'ongoing'])
             ->upcoming();
 
         // Filter by sport
@@ -31,7 +35,7 @@ class EventController extends Controller
         $events = $query->orderBy('event_date', 'asc')->paginate(9);
         $sports = \App\Models\Sport::all();
 
-        return view('events.index', compact('events', 'sports'));
+        return view('users.events.index', compact('events', 'sports'));
     }
 
     /**
@@ -40,6 +44,8 @@ class EventController extends Controller
     public function show(Event $event)
     {
         $event->load(['sport', 'court', 'registrations' => function($query) {
+            $query->where('status', '!=', 'cancelled');
+        }])->loadCount(['registrations' => function($query) {
             $query->where('status', '!=', 'cancelled');
         }]);
 
@@ -52,7 +58,7 @@ class EventController extends Controller
                 ->first();
         }
 
-        return view('events.show', compact('event', 'userRegistration'));
+        return view('users.events.show', compact('event', 'userRegistration'));
     }
 
     /**
@@ -60,26 +66,25 @@ class EventController extends Controller
      */
     public function register(Event $event)
     {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu untuk mendaftar event.');
+        }
+
         // Check if registration is still open
-        if (!$event->is_registration_open) {
-            return redirect()->route('events.show', $event)
-                ->with('error', 'Pendaftaran untuk event ini sudah ditutup');
+        if (Carbon::now()->isAfter($event->registration_deadline)) {
+            return redirect()->route('events.show', $event)->with('error', 'Pendaftaran sudah ditutup.');
         }
 
         // Check if user already registered
-        if (Auth::check()) {
-            $existingRegistration = $event->registrations()
-                ->where('user_id', Auth::id())
-                ->where('status', '!=', 'cancelled')
-                ->first();
+        $existingRegistration = EventRegistration::where('event_id', $event->id)
+            ->where('user_id', Auth::id())
+            ->first();
 
-            if ($existingRegistration) {
-                return redirect()->route('events.show', $event)
-                    ->with('error', 'Anda sudah terdaftar untuk event ini');
-            }
+        if ($existingRegistration) {
+            return redirect()->route('events.show', $event)->with('error', 'Anda sudah terdaftar untuk event ini.');
         }
 
-        return view('events.register', compact('event'));
+        return view('users.events.register', compact('event'));
     }
 
     /**
@@ -87,23 +92,25 @@ class EventController extends Controller
      */
     public function storeRegistration(Request $request, Event $event)
     {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu untuk mendaftar event.');
+        }
+
         // Check if registration is still open
-        if (!$event->is_registration_open) {
-            return redirect()->route('events.show', $event)
-                ->with('error', 'Pendaftaran untuk event ini sudah ditutup');
+        if (Carbon::now()->isAfter($event->registration_deadline)) {
+            return redirect()->route('events.show', $event)->with('error', 'Pendaftaran sudah ditutup.');
         }
 
         // Check if user already registered
-        $existingRegistration = $event->registrations()
+        $existingRegistration = EventRegistration::where('event_id', $event->id)
             ->where('user_id', Auth::id())
-            ->where('status', '!=', 'cancelled')
             ->first();
 
         if ($existingRegistration) {
-            return redirect()->route('events.show', $event)
-                ->with('error', 'Anda sudah terdaftar untuk event ini');
+            return redirect()->route('events.show', $event)->with('error', 'Anda sudah terdaftar untuk event ini.');
         }
 
+        // Validate request
         $request->validate([
             'team_name' => 'required|string|max:255',
             'team_members' => 'required|array|min:1',
@@ -112,24 +119,38 @@ class EventController extends Controller
             'contact_person' => 'required|string|max:255',
             'contact_phone' => 'required|string|max:20',
             'contact_email' => 'required|email|max:255',
-            'additional_info' => 'nullable|string',
+            'additional_info' => 'nullable|string|max:1000',
+            'agree_terms' => 'required|accepted',
+        ], [
+            'team_name.required' => 'Nama tim harus diisi.',
+            'team_members.required' => 'Minimal satu anggota tim harus diisi.',
+            'team_members.*.name.required' => 'Nama anggota tim harus diisi.',
+            'contact_person.required' => 'Nama penanggung jawab harus diisi.',
+            'contact_phone.required' => 'Nomor HP harus diisi.',
+            'contact_email.required' => 'Email harus diisi.',
+            'contact_email.email' => 'Format email tidak valid.',
+            'agree_terms.required' => 'Anda harus menyetujui syarat dan ketentuan.',
         ]);
 
-        // Create registration
-        $registration = EventRegistration::create([
-            'event_id' => $event->id,
-            'user_id' => Auth::id(),
-            'team_name' => $request->team_name,
-            'team_members' => $request->team_members,
-            'contact_person' => $request->contact_person,
-            'contact_phone' => $request->contact_phone,
-            'contact_email' => $request->contact_email,
-            'additional_info' => $request->additional_info,
-            'status' => 'pending',
-        ]);
+        try {
+            // Create event registration
+            $registration = EventRegistration::create([
+                'event_id' => $event->id,
+                'user_id' => Auth::id(),
+                'team_name' => $request->team_name,
+                'team_members' => json_encode($request->team_members),
+                'contact_person' => $request->contact_person,
+                'contact_phone' => $request->contact_phone,
+                'contact_email' => $request->contact_email,
+                'additional_info' => $request->additional_info,
+                'registration_status' => 'pending',
+                'registered_at' => now(),
+            ]);
 
-        return redirect()->route('events.show', $event)
-            ->with('success', "Pendaftaran berhasil! Kode pendaftaran: {$registration->registration_code}");
+            return redirect()->route('events.show', $event)->with('success', 'Pendaftaran berhasil! Tim Anda telah terdaftar untuk event ini.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.')->withInput();
+        }
     }
 
     /**
@@ -142,7 +163,7 @@ class EventController extends Controller
             ->orderBy('registered_at', 'desc')
             ->paginate(10);
 
-        return view('events.my-registrations', compact('registrations'));
+        return view('users.events.my-registrations', compact('registrations'));
     }
 
     /**

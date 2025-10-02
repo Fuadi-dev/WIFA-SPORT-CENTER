@@ -9,7 +9,7 @@ use App\Models\Court;
 use App\Models\EventRegistration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class EventController extends Controller
 {
@@ -102,7 +102,9 @@ class EventController extends Controller
                 $eventData['poster'] = $posterPath;
             }
 
-            $event = Event::create($eventData);
+            $slug = Str::slug($request->title);
+
+            $event = Event::create($eventData + ['slug' => $slug]);
 
             // If AJAX request, return JSON
             if ($request->ajax()) {

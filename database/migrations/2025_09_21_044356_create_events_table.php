@@ -30,6 +30,7 @@ return new class extends Migration
             $table->text('requirements')->nullable(); // persyaratan peserta
             $table->text('prize_info')->nullable(); // informasi hadiah
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
