@@ -27,7 +27,11 @@ class Booking extends Model
         'midtrans_snap_token',
         'midtrans_order_id',
         'confirmed_at',
-        'paid_at'
+        'paid_at',
+        'promo_code_id',
+        'auto_promo_id',
+        'discount_amount',
+        'original_price'
     ];
 
     protected $casts = [
@@ -35,6 +39,8 @@ class Booking extends Model
         'start_time' => 'datetime:H:i',
         'end_time' => 'datetime:H:i',
         'total_price' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'original_price' => 'decimal:2',
         'confirmed_at' => 'datetime',
         'paid_at' => 'datetime'
     ];
@@ -71,5 +77,15 @@ class Booking extends Model
     public function court()
     {
         return $this->belongsTo(Court::class);
+    }
+
+    public function promoCode()
+    {
+        return $this->belongsTo(PromoCode::class);
+    }
+
+    public function autoPromo()
+    {
+        return $this->belongsTo(AutoPromo::class);
     }
 }

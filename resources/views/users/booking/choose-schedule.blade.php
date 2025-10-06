@@ -1035,7 +1035,11 @@
                 let statusClass = 'availability-status text-xs mt-1 text-red-500';
                 let message = result.message;
                 
-                if (result.reason === 'event') {
+                if (result.reason === 'past_time') {
+                    iconClass = 'fas fa-history';
+                    statusClass = 'availability-status text-xs mt-1 text-gray-500';
+                    message = 'Waktu Sudah Lewat';
+                } else if (result.reason === 'event') {
                     iconClass = 'fas fa-trophy';
                     statusClass = 'availability-status text-xs mt-1 text-purple-600';
                     if (result.event && result.event.title) {

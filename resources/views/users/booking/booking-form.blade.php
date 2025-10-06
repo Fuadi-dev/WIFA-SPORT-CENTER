@@ -89,10 +89,112 @@
                         </div>
                         <div class="flex justify-between items-center p-3 bg-amber-100 rounded-lg">
                             <span class="text-amber-700 font-semibold">Total Harga:</span>
-                            <span class="font-bold text-xl text-amber-800">Rp {{ number_format($totalPrice, 0, ',', '.') }}</span>
+                            <span class="font-bold text-xl text-amber-800" id="originalPrice">Rp {{ number_format($totalPrice, 0, ',', '.') }}</span>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Promo Section -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8 border-2 border-amber-100">
+                <h2 class="text-2xl font-bold text-amber-800 mb-6">
+                    <i class="fas fa-tags mr-2"></i>Kode Promo
+                </h2>
+                
+                <!-- Auto Promo Alert (if applicable) -->
+                @if(isset($autoPromo))
+                <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-gift text-2xl text-green-600"></i>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-lg font-semibold text-green-800 mb-1">
+                                <i class="fas fa-check-circle mr-1"></i>Promo Otomatis Terdeteksi!
+                            </h3>
+                            <p class="text-green-700 mb-2">
+                                <strong>{{ $autoPromo->name }}</strong>
+                            </p>
+                            @if($autoPromo->description)
+                            <p class="text-sm text-green-600 mb-2">{{ $autoPromo->description }}</p>
+                            @endif
+                            <div class="flex items-center space-x-4 text-sm">
+                                @if($autoPromo->discount_type === 'percentage')
+                                    <span class="inline-flex items-center px-3 py-1.5 bg-green-100 text-green-800 rounded-lg font-semibold">
+                                        <i class="fas fa-percentage mr-1"></i>
+                                        Diskon {{ rtrim(rtrim(number_format($autoPromo->discount_value, 2, ',', '.'), '0'), ',') }}%
+                                    </span>
+                                    @if($autoPromo->max_discount)
+                                    <span class="text-green-700 text-xs">
+                                        (Max: Rp {{ number_format($autoPromo->max_discount, 0, ',', '.') }})
+                                    </span>
+                                    @endif
+                                    <span class="text-green-700 font-semibold">
+                                        Hemat: Rp {{ number_format($totalPrice * ($autoPromo->discount_value / 100) > ($autoPromo->max_discount ?? PHP_INT_MAX) ? $autoPromo->max_discount : $totalPrice * ($autoPromo->discount_value / 100), 0, ',', '.') }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-1.5 bg-green-100 text-green-800 rounded-lg font-semibold">
+                                        <i class="fas fa-tag mr-1"></i>
+                                        Potongan Rp {{ number_format($autoPromo->discount_value, 0, ',', '.') }}
+                                    </span>
+                                @endif
+                            </div>
+                            <input type="hidden" name="auto_promo_detected" value="1">
+                        </div>
+                    </div>
+                </div>
+                @endif
+                
+                <!-- Promo Code Input -->
+                <div>
+                    <label for="promo_code" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Punya Kode Promo? <span class="text-gray-500 font-normal">(Opsional)</span>
+                    </label>
+                    <div class="flex gap-3">
+                        <input type="text" 
+                               id="promo_code" 
+                               name="promo_code" 
+                               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent uppercase" 
+                               placeholder="Masukkan kode promo (contoh: WIFA2024)"
+                               value="{{ old('promo_code') }}">
+                        <button type="button" 
+                                onclick="validatePromoCode()" 
+                                class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-all duration-300">
+                            <i class="fas fa-check mr-1"></i>Validasi
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>Masukkan kode promo untuk mendapatkan diskon tambahan
+                    </p>
+                </div>
+                
+                <!-- Promo Code Result -->
+                <div id="promoResult" class="mt-4 hidden"></div>
+                
+                <!-- Discount Summary -->
+                <div id="discountSummary" class="mt-6 hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-6">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">Harga Asli:</span>
+                                <span class="text-gray-700 line-through" id="priceBeforeDiscount">Rp {{ number_format($totalPrice, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-green-700 font-semibold">
+                                    <i class="fas fa-tag mr-1"></i>Diskon:
+                                </span>
+                                <span class="text-green-700 font-semibold" id="discountAmount">- Rp 0</span>
+                            </div>
+                            <div class="border-t-2 border-green-300 pt-3 flex justify-between items-center">
+                                <span class="text-lg font-bold text-gray-800">Total Bayar:</span>
+                                <span class="text-2xl font-bold text-green-600" id="finalPrice">Rp {{ number_format($totalPrice, 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <input type="hidden" name="validated_promo_code" id="validatedPromoCode" value="">
+                <input type="hidden" name="discount_amount" id="discountAmountInput" value="0">
             </div>
 
             <!-- Team Details -->
@@ -254,6 +356,136 @@
     </div>
 
     <script>
+        const originalPrice = {{ $totalPrice }};
+        let appliedDiscount = 0;
+        
+        // Validate Promo Code
+        function validatePromoCode() {
+            const promoCode = document.getElementById('promo_code').value.trim().toUpperCase();
+            const promoResult = document.getElementById('promoResult');
+            
+            if (!promoCode) {
+                showPromoError('Masukkan kode promo terlebih dahulu');
+                return;
+            }
+            
+            // Show loading
+            promoResult.innerHTML = `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-spinner fa-spin text-blue-600 mr-2"></i>
+                        <span class="text-blue-700">Memvalidasi kode promo...</span>
+                    </div>
+                </div>
+            `;
+            promoResult.classList.remove('hidden');
+            
+            // AJAX request to validate promo code
+            fetch('/api/validate-promo-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    code: promoCode,
+                    booking_date: '{{ request("date") }}',
+                    start_time: '{{ request("start_time") }}',
+                    total_amount: originalPrice
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showPromoSuccess(data.promo, data.discount);
+                    applyDiscount(data.discount);
+                    document.getElementById('validatedPromoCode').value = promoCode;
+                } else {
+                    showPromoError(data.message);
+                    document.getElementById('validatedPromoCode').value = '';
+                }
+            })
+            .catch(error => {
+                showPromoError('Terjadi kesalahan saat validasi');
+                console.error('Error:', error);
+            });
+        }
+        
+        function showPromoSuccess(promo, discount) {
+            const promoResult = document.getElementById('promoResult');
+            
+            // Format discount display
+            let discountText = '';
+            if (promo.type === 'percentage') {
+                // Remove unnecessary decimal zeros (10.00 -> 10)
+                const percentage = parseFloat(promo.value).toString();
+                discountText = `Diskon ${percentage}%`;
+            } else {
+                discountText = 'Potongan Rp ' + new Intl.NumberFormat('id-ID').format(promo.value);
+            }
+            
+            promoResult.innerHTML = `
+                <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-check-circle text-2xl text-green-600 mr-3"></i>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-green-800 mb-1">
+                                <i class="fas fa-gift mr-1"></i>Kode Promo Valid!
+                            </h4>
+                            <p class="text-sm text-green-700 font-semibold mb-1">
+                                ${discountText}
+                            </p>
+                            <p class="text-sm text-green-600">
+                                💰 Anda hemat: Rp ${new Intl.NumberFormat('id-ID').format(discount)}
+                            </p>
+                        </div>
+                        <button onclick="removePromo()" class="text-red-500 hover:text-red-700 text-xl">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            promoResult.classList.remove('hidden');
+        }
+        
+        function showPromoError(message) {
+            const promoResult = document.getElementById('promoResult');
+            promoResult.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                        <span class="text-red-700">${message}</span>
+                    </div>
+                </div>
+            `;
+            promoResult.classList.remove('hidden');
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                promoResult.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function applyDiscount(discount) {
+            appliedDiscount = discount;
+            const finalPrice = originalPrice - discount;
+            
+            document.getElementById('discountAmountInput').value = discount;
+            document.getElementById('priceBeforeDiscount').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(originalPrice);
+            document.getElementById('discountAmount').textContent = '- Rp ' + new Intl.NumberFormat('id-ID').format(discount);
+            document.getElementById('finalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(finalPrice);
+            document.getElementById('discountSummary').classList.remove('hidden');
+        }
+        
+        function removePromo() {
+            document.getElementById('promo_code').value = '';
+            document.getElementById('validatedPromoCode').value = '';
+            document.getElementById('discountAmountInput').value = '0';
+            document.getElementById('promoResult').classList.add('hidden');
+            document.getElementById('discountSummary').classList.add('hidden');
+            appliedDiscount = 0;
+        }
+        
         // Payment method selection
         document.addEventListener('change', function(e) {
             if (e.target.name === 'payment_method') {

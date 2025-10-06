@@ -7,6 +7,8 @@ use App\Models\Sport;
 use App\Models\Court;
 use App\Models\Booking;
 use App\Models\Event;
+use App\Models\PromoCode;
+use App\Models\AutoPromo;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -175,6 +177,18 @@ class BookingController extends Controller
         
         $court = Court::findOrFail($courtId);
         
+        // Check if the selected date-time is in the past
+        $bookingDateTime = Carbon::parse($date . ' ' . $startTime);
+        $now = Carbon::now();
+        
+        if ($bookingDateTime->isPast()) {
+            return response()->json([
+                'available' => false,
+                'reason' => 'past_time',
+                'message' => 'Waktu sudah lewat'
+            ]);
+        }
+        
         // Check for events first - this should block all booking
         $event = $court->getEventForDate($date);
         if ($event) {
@@ -294,7 +308,94 @@ class BookingController extends Controller
         $duration = $start->diffInHours($end);
         $totalPrice = $this->calculateTotalPrice($startTime, $endTime, $sport, $date);
         
-        return view('users.booking.booking-form', compact('sport', 'court', 'date', 'startTime', 'endTime', 'duration', 'totalPrice'));
+        // Check for applicable auto promo
+        $autoPromo = $this->findApplicableAutoPromo($date, $startTime, $totalPrice);
+        
+        return view('users.booking.booking-form', compact('sport', 'court', 'date', 'startTime', 'endTime', 'duration', 'totalPrice', 'autoPromo'));
+    }
+    
+    // API: Validate Promo Code
+    public function validatePromoCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string',
+            'booking_date' => 'required|date',
+            'start_time' => 'required',
+            'total_amount' => 'required|numeric'
+        ]);
+        
+        $code = strtoupper($request->code);
+        $promoCode = PromoCode::where('code', $code)->first();
+        
+        if (!$promoCode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode promo tidak ditemukan'
+            ]);
+        }
+        
+        if (!$promoCode->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode promo sudah tidak berlaku atau telah mencapai batas penggunaan'
+            ]);
+        }
+        
+        $discount = $promoCode->calculateDiscount($request->total_amount);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Kode promo berhasil diterapkan',
+            'promo' => [
+                'code' => $promoCode->code,
+                'type' => $promoCode->type, // 'percentage' or 'fixed'
+                'value' => $promoCode->value,
+                'description' => $promoCode->type === 'percentage' 
+                    ? $promoCode->value . '% discount' 
+                    : 'Rp ' . number_format($promoCode->value, 0, ',', '.') . ' discount'
+            ],
+            'discount' => $discount
+        ]);
+    }
+    
+    // Find applicable auto promo (return the one with highest discount)
+    private function findApplicableAutoPromo($date, $time, $amount)
+    {
+        $dateTime = Carbon::parse($date . ' ' . $time);
+        
+        $autoPromos = AutoPromo::where('is_active', true)
+            ->where(function ($query) use ($date) {
+                $query->whereNull('valid_from')
+                      ->orWhere('valid_from', '<=', $date);
+            })
+            ->where(function ($query) use ($date) {
+                $query->whereNull('valid_until')
+                      ->orWhere('valid_until', '>=', $date);
+            })
+            ->get();
+        
+        $applicablePromos = [];
+        
+        foreach ($autoPromos as $promo) {
+            if ($promo->isApplicable($dateTime, $amount)) {
+                $discount = $promo->calculateDiscount($amount);
+                $applicablePromos[] = [
+                    'promo' => $promo,
+                    'discount' => $discount
+                ];
+            }
+        }
+        
+        // If multiple promos are applicable, return the one with highest discount
+        if (count($applicablePromos) > 0) {
+            usort($applicablePromos, function($a, $b) {
+                return $b['discount'] <=> $a['discount'];
+            });
+            
+            return $applicablePromos[0]['promo'];
+        }
+        
+        return null;
     }
 
     // Step 5: Process Booking
@@ -309,7 +410,9 @@ class BookingController extends Controller
             'team_name' => 'required|string|max:255',
             'payment_method' => 'required|in:cash,midtrans',
             'notes' => 'nullable|string',
-            'agree_terms' => 'required|accepted'
+            'agree_terms' => 'required|accepted',
+            'validated_promo_code' => 'nullable|string',
+            'discount_amount' => 'nullable|numeric|min:0'
         ]);
 
         // Double check availability
@@ -327,7 +430,33 @@ class BookingController extends Controller
 
         // Calculate price with time-based pricing
         $sport = Sport::findOrFail($request->sport_id);
-        $totalPrice = $this->calculateTotalPrice($request->start_time, $request->end_time, $sport, $request->date);
+        $originalPrice = $this->calculateTotalPrice($request->start_time, $request->end_time, $sport, $request->date);
+        
+        // Process promo codes
+        $promoCodeId = null;
+        $autoPromoId = null;
+        $discountAmount = 0;
+        
+        // Check if user applied a promo code
+        if ($request->filled('validated_promo_code')) {
+            $promoCode = PromoCode::where('code', strtoupper($request->validated_promo_code))->first();
+            if ($promoCode && $promoCode->isValid()) {
+                $promoCodeId = $promoCode->id;
+                $discountAmount = $promoCode->calculateDiscount($originalPrice);
+            }
+        }
+        
+        // If no promo code, check for auto promo
+        if (!$promoCodeId && $request->filled('auto_promo_detected')) {
+            $autoPromo = $this->findApplicableAutoPromo($request->date, $request->start_time, $originalPrice);
+            if ($autoPromo) {
+                $autoPromoId = $autoPromo->id;
+                $discountAmount = $autoPromo->calculateDiscount($originalPrice);
+            }
+        }
+        
+        // Calculate final price
+        $totalPrice = $originalPrice - $discountAmount;
 
         // Determine initial status based on payment method
         $initialStatus = $request->payment_method === 'cash' ? 'confirmed' : 'pending_payment';
@@ -344,6 +473,10 @@ class BookingController extends Controller
             'team_name' => $request->team_name,
             'notes' => $request->notes,
             'payment_method' => $request->payment_method,
+            'promo_code_id' => $promoCodeId,
+            'auto_promo_id' => $autoPromoId,
+            'original_price' => $originalPrice,
+            'discount_amount' => $discountAmount,
             'total_price' => $totalPrice,
             'status' => $initialStatus,
             'confirmed_at' => $confirmedAt
@@ -409,6 +542,9 @@ class BookingController extends Controller
         if ($booking->user_id !== Auth::id()) {
             abort(403);
         }
+        
+        // Load relationships
+        $booking->load(['sport', 'court', 'promoCode', 'autoPromo']);
 
         return view('users.booking.confirmation', compact('booking'));
     }
@@ -417,7 +553,7 @@ class BookingController extends Controller
     public function myBookings()
     {
         $bookings = Booking::where('user_id', Auth::id())
-                          ->with(['sport', 'court'])
+                          ->with(['sport', 'court', 'promoCode', 'autoPromo'])
                           ->orderBy('booking_date', 'desc')
                           ->orderBy('start_time', 'desc')
                           ->paginate(10);

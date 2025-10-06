@@ -43,6 +43,27 @@
                     <i class="fas fa-users w-5 mr-3"></i>
                     Kelola User
                 </a>
+                
+                <!-- Promo Management -->
+                <div class="mt-2">
+                    <button onclick="togglePromoMenu()" class="menu-item flex items-center justify-between w-full px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.promo.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                        <div class="flex items-center">
+                            <i class="fas fa-tags w-5 mr-3"></i>
+                            Kelola Promo
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform" id="promoChevron"></i>
+                    </button>
+                    <div id="promoSubmenu" class="ml-8 mt-1 space-y-1 {{ request()->routeIs('admin.promo.*') ? '' : 'hidden' }}">
+                        <a href="{{ route('admin.promo.codes.index') }}" class="flex items-center px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.promo.codes.*') ? 'bg-amber-700/50 text-white' : 'text-amber-200 hover:text-white hover:bg-amber-800/30' }}">
+                            <i class="fas fa-ticket-alt w-4 mr-2"></i>
+                            Kode Promo
+                        </a>
+                        <a href="{{ route('admin.promo.auto.index') }}" class="flex items-center px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.promo.auto.*') ? 'bg-amber-700/50 text-white' : 'text-amber-200 hover:text-white hover:bg-amber-800/30' }}">
+                            <i class="fas fa-clock w-4 mr-2"></i>
+                            Promo Otomatis
+                        </a>
+                    </div>
+                </div>
             </div>
             
             <div class="mb-6">
@@ -54,24 +75,20 @@
                     Laporan Booking
                 </a>
                 
-                <!-- Financial Reports -->
-                <a href="{{ url('admin.reports.financial') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.financial') ? 'active' : 'text-amber-100 hover:text-white' }}">
-                    <i class="fas fa-money-bill-wave w-5 mr-3"></i>
-                    Laporan Keuangan
-                </a>
+                @if(auth()->user()->role === 'owner')
+                    <!-- Financial Reports -->
+                    <a href="{{ url('admin.reports.financial') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.financial') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                        <i class="fas fa-money-bill-wave w-5 mr-3"></i>
+                        Laporan Keuangan
+                    </a>
+                @endif
+               
             </div>
             
             <div>
-                <h3 class="text-amber-300 text-xs uppercase tracking-wider font-semibold mb-3 px-3">Pengaturan</h3>
-                
-                <!-- Settings -->
-                <a href="{{ url('admin.settings') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.settings') ? 'active' : 'text-amber-100 hover:text-white' }}">
-                    <i class="fas fa-cog w-5 mr-3"></i>
-                    Pengaturan
-                </a>
-                
+                <h3 class="text-amber-300 text-xs uppercase tracking-wider font-semibold mb-3 px-3">Beranda</h3>
                 <!-- Back to Website -->
-                <a href="{{ url('/') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium text-amber-100 hover:text-white">
+                <a href="{{ url('/booking') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium text-amber-100 hover:text-white">
                     <i class="fas fa-globe w-5 mr-3"></i>
                     Kembali ke Website
                 </a>
@@ -96,3 +113,12 @@
         </div>
     </div>
 </aside>
+
+<script>
+    function togglePromoMenu() {
+        const submenu = document.getElementById('promoSubmenu');
+        const chevron = document.getElementById('promoChevron');
+        submenu.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+    }
+</script>

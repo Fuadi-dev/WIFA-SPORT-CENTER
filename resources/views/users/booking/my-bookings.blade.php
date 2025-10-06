@@ -123,10 +123,32 @@
                                 </div>
                                 
                                 <div class="bg-amber-50 rounded-lg p-4">
-                                    <div class="text-sm text-amber-600 mb-1">Total Harga</div>
+                                    <div class="text-sm text-amber-600 mb-1">Total Bayar</div>
                                     <div class="font-bold text-amber-800">Rp {{ number_format($booking->total_price, 0, ',', '.') }}</div>
+                                    @if($booking->discount_amount > 0)
+                                        <div class="text-xs text-green-600 mt-1">
+                                            <i class="fas fa-tag mr-1"></i>Hemat Rp {{ number_format($booking->discount_amount, 0, ',', '.') }}
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
+
+                            <!-- Promo Badge -->
+                            @if($booking->discount_amount > 0)
+                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-gift text-green-600 mr-2"></i>
+                                    <div class="flex-1">
+                                        @if($booking->promoCode)
+                                            <span class="text-sm font-semibold text-green-800">Kode Promo: {{ $booking->promoCode->code }}</span>
+                                        @elseif($booking->autoPromo)
+                                            <span class="text-sm font-semibold text-green-800">{{ $booking->autoPromo->name }}</span>
+                                        @endif
+                                        <span class="text-xs text-green-600 ml-2">- Rp {{ number_format($booking->discount_amount, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
 
                             <!-- Payment Method -->
                             <div class="flex items-center justify-between mb-4">

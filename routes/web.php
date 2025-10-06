@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\BookingController as ManagementBookingController;
 use App\Http\Controllers\Admin\EventController as ManagementEventController;
 use App\Http\Controllers\Admin\UserController as ManagementUserController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\PromoCodeController;
+use App\Http\Controllers\Admin\AutoPromoController;
 use App\Http\Controllers\EventController;
 
 Route::get('/',[MainController::class, 'index'])->name('home');
@@ -28,6 +30,12 @@ Route::post('/register', [AuthController::class, 'postRegister'])->name('registe
 // Google OAuth Routes
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
+// WhatsApp Setup Routes (after OAuth)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/whatsapp-setup', [AuthController::class, 'whatsappSetup'])->name('whatsapp.setup');
+    Route::post('/whatsapp-setup', [AuthController::class, 'whatsappSetupPost'])->name('whatsapp.setup.post');
+});
 
 // OTP Routes
 Route::get('/otp/verify/{id}', [AuthController::class, 'showOtpForm'])->name('otp.verify');
@@ -95,6 +103,26 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/bookings/by-sport', [ReportController::class, 'bookingsBySport'])->name('bookings.by-sport');
             });
             
+            // Admin Promo Code Management
+            Route::prefix('promo/codes')->name('admin.promo.codes.')->group(function () {
+                Route::get('/', [PromoCodeController::class, 'index'])->name('index');
+                Route::post('/', [PromoCodeController::class, 'store'])->name('store');
+                Route::get('/{id}/edit', [PromoCodeController::class, 'edit'])->name('edit');
+                Route::patch('/{id}', [PromoCodeController::class, 'update'])->name('update');
+                Route::delete('/{id}', [PromoCodeController::class, 'destroy'])->name('destroy');
+                Route::patch('/{id}/toggle-status', [PromoCodeController::class, 'toggleStatus'])->name('toggleStatus');
+            });
+            
+            // Admin Auto Promo Management
+            Route::prefix('promo/auto')->name('admin.promo.auto.')->group(function () {
+                Route::get('/', [AutoPromoController::class, 'index'])->name('index');
+                Route::post('/', [AutoPromoController::class, 'store'])->name('store');
+                Route::get('/{id}/edit', [AutoPromoController::class, 'edit'])->name('edit');
+                Route::patch('/{id}', [AutoPromoController::class, 'update'])->name('update');
+                Route::delete('/{id}', [AutoPromoController::class, 'destroy'])->name('destroy');
+                Route::patch('/{id}/toggle-status', [AutoPromoController::class, 'toggleStatus'])->name('toggleStatus');
+            });
+            
         });
         
         // Booking Routes
@@ -114,6 +142,9 @@ Route::middleware(['auth'])->group(function () {
             // Legacy route
             Route::get('/olahraga', [BookingController::class, 'olahraga']);
         });
+        
+        // Promo API Routes
+        Route::post('/api/validate-promo-code', [BookingController::class, 'validatePromoCode'])->name('api.validate-promo-code');
         
         // User bookings
         Route::get('/my-bookings', [BookingController::class, 'myBookings'])->name('my-bookings');

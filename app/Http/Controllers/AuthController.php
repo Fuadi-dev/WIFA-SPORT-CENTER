@@ -93,54 +93,63 @@ class AuthController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:8|confirmed',
-                'whatsapp' => 'required|string|max:15',
+                'telp' => 'required|string|max:15|regex:/^(0|62)\d{9,13}$/',
+            ], [
+                'telp.regex' => 'Format nomor WhatsApp tidak valid. Gunakan format 08xxx atau 62xxx.'
             ]);
 
-            // Check if email already exists in OTP verification table
-            $existingOtp = OtpVerification::where('email', $request->email)->first();
-            if ($existingOtp) {
-                $existingOtp->delete();
+            $uniqueEmail = User::where('email', $request->email)->first();
+
+            if($uniqueEmail){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email sudah terdaftar. Silakan gunakan email lain.'
+                ], 422);
             }
 
-            // Generate 6-digit OTP
-            $otpCode = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+            // Normalize phone number
+            $phoneNumber = $request->telp;
+            if (substr($phoneNumber, 0, 1) === '0') {
+                $phoneNumber = '62' . substr($phoneNumber, 1);
+            }
 
-            // Store registration data with OTP
-            $otpVerification = OtpVerification::create([
+            // Check if phone number already exists (check both formats)
+            $existingPhone = User::where('telp', $phoneNumber)
+                ->orWhere('telp', '0' . substr($phoneNumber, 2))
+                ->first();
+
+            if ($existingPhone) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor WhatsApp sudah terdaftar. Silakan gunakan nomor lain.'
+                ], 422);
+            }
+
+            $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'whatsapp' => $request->whatsapp,
                 'password' => Hash::make($request->password),
-                'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(5),
-                'is_verified' => false
+                'role' => 'user',
+                'telp' => $phoneNumber,
             ]);
-
-            // Send OTP via WhatsApp
-            $otpSent = $this->whatsappService->sendOTP($request->whatsapp, $otpCode, $request->name);
-
-            if ($otpSent) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Kode OTP telah dikirim ke WhatsApp Anda',
-                    'verification_id' => $otpVerification->id,
-                    'redirect_url' => route('otp.verify', ['id' => $otpVerification->id])
-                ]);
-            } else {
-                $otpVerification->delete();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal mengirim OTP. Silakan coba lagi.'
-                ], 422);
+            
+            $credentials = $request->only('email', 'password');
+            if($user){
+                if (Auth::attempt($credentials)) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Registrasi berhasil! Selamat datang di WIFA Sport Center.',
+                        'redirect_url' => '/'
+                    ]);
+                }else{
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal melakukan login otomatis. Silakan login secara manual.'
+                    ], 500);
+                }
             }
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak valid',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
+        } 
+        catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan. Silakan coba lagi.'
@@ -148,105 +157,7 @@ class AuthController extends Controller
         }
     }
 
-    public function showOtpForm($id)
-    {
-        $otpVerification = OtpVerification::findOrFail($id);
-        
-        if ($otpVerification->isExpired()) {
-            return redirect()->route('register')->with('error', 'Kode OTP telah kadaluarsa. Silakan daftar ulang.');
-        }
 
-        return view('auth.otp-verify', compact('otpVerification'));
-    }
-
-    public function verifyOtp(Request $request, $id)
-    {
-        try {
-            $request->validate([
-                'otp_code' => 'required|string|size:6'
-            ]);
-
-            $otpVerification = OtpVerification::findOrFail($id);
-
-            if ($otpVerification->isValid($request->otp_code)) {
-                // Create user account
-                $user = User::create([
-                    'name' => $otpVerification->name,
-                    'email' => $otpVerification->email,
-                    'password' => $otpVerification->password, // Already hashed
-                    'telp' => $otpVerification->whatsapp
-                ]);
-
-                // Mark OTP as verified
-                $otpVerification->update(['is_verified' => true]);
-
-                // Send welcome message
-                $this->whatsappService->sendWelcomeMessage($otpVerification->whatsapp, $otpVerification->name);
-
-                // Delete OTP record
-                $otpVerification->delete();
-
-                // Auto login
-                Auth::login($user);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Registrasi berhasil! Selamat datang di WIFA Sport Center.',
-                    'redirect_url' => '/'
-                ]);
-
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => $otpVerification->isExpired() ? 'Kode OTP telah kadaluarsa' : 'Kode OTP tidak valid'
-                ], 422);
-            }
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan. Silakan coba lagi.'
-            ], 500);
-        }
-    }
-
-    public function resendOtp($id)
-    {
-        try {
-            $otpVerification = OtpVerification::findOrFail($id);
-
-            // Generate new OTP
-            $newOtpCode = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-
-            // Update OTP record
-            $otpVerification->update([
-                'otp_code' => $newOtpCode,
-                'expires_at' => Carbon::now()->addMinutes(5),
-                'is_verified' => false
-            ]);
-
-            // Send new OTP
-            $otpSent = $this->whatsappService->sendOTP($otpVerification->whatsapp, $newOtpCode, $otpVerification->name);
-
-            if ($otpSent) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Kode OTP baru telah dikirim ke WhatsApp Anda'
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal mengirim OTP. Silakan coba lagi.'
-                ], 422);
-            }
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan. Silakan coba lagi.'
-            ], 500);
-        }
-    }
 
     // Google OAuth Methods
     public function redirectToGoogle()
@@ -421,7 +332,14 @@ class AuthController extends Controller
                 return redirect('/login')->with('error', 'Authentication error: ' . $authError->getMessage());
             }
 
-            Log::info('OAuth flow completed successfully, redirecting to home');
+            Log::info('OAuth flow completed successfully, checking WhatsApp number');
+            
+            // Check if user needs to setup WhatsApp number
+            if (!$user->telp) {
+                Log::info('User needs to setup WhatsApp', ['user_id' => $user->id]);
+                return redirect('/whatsapp-setup')->with('info', 'Silakan tambahkan nomor WhatsApp untuk notifikasi booking.');
+            }
+            
             return redirect('/')->with('success', 'Login dengan Google berhasil! Selamat datang di WIFA Sport Center.');
 
         } catch (\Laravel\Socialite\Two\InvalidStateException $stateError) {
@@ -446,5 +364,119 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         
         return redirect('/')->with('success', 'Anda telah berhasil logout.');
+    }
+
+    // WhatsApp Setup Methods
+    public function whatsappSetup()
+    {
+        if (!Auth::check()) {
+            return redirect('/login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        // If user already has WhatsApp number, redirect to home
+        if (Auth::user()->telp) {
+            return redirect('/')->with('info', 'Nomor WhatsApp sudah terdaftar.');
+        }
+
+        return view('auth.whatsapp-setup');
+    }
+
+    public function whatsappSetupPost(Request $request)
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Silakan login terlebih dahulu.'
+                ], 401);
+            }
+
+            $user = User::find(Auth::id());
+
+            // If user chooses to skip
+            if ($request->has('skip') && $request->skip == 'true') {
+                Log::info('User skipped WhatsApp setup', ['user_id' => $user->id]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Anda dapat menambahkan nomor WhatsApp nanti dari profil.',
+                    'redirect_url' => '/'
+                ]);
+            }
+
+            // Validate phone number
+            $request->validate([
+                'telp' => [
+                    'required',
+                    'string',
+                    'regex:/^(0|62)\d{9,13}$/',
+                    'max:15'
+                ],
+            ], [
+                'telp.required' => 'Nomor WhatsApp wajib diisi.',
+                'telp.regex' => 'Format nomor tidak valid. Gunakan format 08xxx atau 62xxx.',
+                'telp.max' => 'Nomor terlalu panjang.'
+            ]);
+
+            $phoneNumber = $request->telp;
+
+            // Normalize phone number (convert 08xx to 628xx)
+            if (substr($phoneNumber, 0, 1) === '0') {
+                $phoneNumber = '62' . substr($phoneNumber, 1);
+            }
+
+            // Check if phone number already exists (check both formats)
+            $existingUser = User::where('telp', $phoneNumber)
+                ->orWhere('telp', '0' . substr($phoneNumber, 2))
+                ->where('id', '!=', $user->id)
+                ->first();
+
+            if ($existingUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor WhatsApp sudah terdaftar. Silakan gunakan nomor lain.'
+                ], 422);
+            }
+
+            // Update user's phone number
+            $user->telp = $phoneNumber;
+            $user->save();
+
+            Log::info('WhatsApp number added successfully', [
+                'user_id' => $user->id,
+                'telp' => $phoneNumber
+            ]);
+
+            // Send welcome message
+            try {
+                $this->whatsappService->sendWelcomeMessage($phoneNumber, $user->name);
+                Log::info('Welcome WhatsApp message sent', ['telp' => $phoneNumber]);
+            } catch (\Exception $whatsappError) {
+                Log::warning('WhatsApp message failed but continuing', [
+                    'error' => $whatsappError->getMessage()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Nomor WhatsApp berhasil ditambahkan! Selamat datang di WIFA Sport Center.',
+                'redirect_url' => '/'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak valid.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('WhatsApp setup error:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan. Silakan coba lagi.'
+            ], 500);
+        }
     }
 }
