@@ -150,21 +150,21 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center space-x-2">
-                                            <a href="{{ route('admin.events.show', $event) }}" 
-                                               class="text-blue-600 hover:text-blue-900">
+                                            <button onclick="openEventDetailModal({{ $event->id }})" 
+                                               class="text-blue-600 hover:text-blue-900" title="Lihat Detail Event">
                                                 <i class="fas fa-eye"></i>
-                                            </a>
+                                            </button>
                                             <button onclick="openEditEventModal({{ $event->id }})" 
-                                               class="text-amber-600 hover:text-amber-900">
+                                               class="text-amber-600 hover:text-amber-900" title="Edit Event">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <a href="{{ route('admin.events.registrations', $event) }}" 
+                                            <button onclick="openRegistrationsModal({{ $event->id }})" 
                                                class="text-green-600 hover:text-green-900" title="Lihat Pendaftar">
                                                 <i class="fas fa-users"></i>
-                                            </a>
+                                            </button>
                                             @if($event->registrations->count() === 0)
                                                 <button onclick="confirmDelete({{ $event->id }}, '{{ $event->title }}')" 
-                                                        class="text-red-600 hover:text-red-900">
+                                                        class="text-red-600 hover:text-red-900" title="Hapus Event">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             @endif
@@ -538,6 +538,58 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Detail Modal -->
+<div id="eventDetailModal" class="fixed inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm z-[9999] hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-trophy text-amber-500 mr-2"></i>
+                    Detail Event
+                </h3>
+                <button onclick="closeEventDetailModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="eventDetailContent" class="space-y-6">
+                    <!-- Loading state -->
+                    <div class="flex items-center justify-center py-12">
+                        <i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registrations Modal -->
+<div id="registrationsModal" class="fixed inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm z-[9999] hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-users text-green-500 mr-2"></i>
+                    Daftar Pendaftar Event
+                </h3>
+                <button onclick="closeRegistrationsModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="registrationsContent" class="space-y-4">
+                    <!-- Loading state -->
+                    <div class="flex items-center justify-center py-12">
+                        <i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -952,5 +1004,287 @@
         document.getElementById('editPosterPreview').classList.add('hidden');
         document.getElementById('editPosterImg').src = '';
     }
+    
+    // Event Detail Modal Functions
+    function openEventDetailModal(eventId) {
+        document.getElementById('eventDetailModal').classList.remove('hidden');
+        
+        // Show loading state
+        document.getElementById('eventDetailContent').innerHTML = `
+            <div class="flex items-center justify-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i>
+            </div>
+        `;
+        
+        // Fetch event details
+        fetch(`/admin/events/${eventId}/detail`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayEventDetail(data.event);
+            } else {
+                document.getElementById('eventDetailContent').innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                        <p class="text-gray-600">Gagal memuat detail event</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('eventDetailContent').innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                    <p class="text-gray-600">Terjadi kesalahan saat memuat data</p>
+                </div>
+            `;
+        });
+    }
+    
+    function closeEventDetailModal() {
+        document.getElementById('eventDetailModal').classList.add('hidden');
+    }
+    
+    function displayEventDetail(event) {
+        const statusBadge = {
+            'draft': '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-800">Draft</span>',
+            'open_registration': '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">Buka Pendaftaran</span>',
+            'registration_closed': '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">Tutup Pendaftaran</span>',
+            'ongoing': '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">Berlangsung</span>',
+            'completed': '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-purple-100 text-purple-800">Selesai</span>',
+            'cancelled': '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">Dibatalkan</span>'
+        };
+        
+        const html = `
+            <div class="space-y-6">
+                <!-- Poster -->
+                ${event.poster ? `
+                    <div class="rounded-lg overflow-hidden">
+                        <img src="${event.poster_url}" alt="${event.title}" class="w-full h-64 object-cover">
+                    </div>
+                ` : ''}
+                
+                <!-- Event Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Nama Event</label>
+                            <p class="text-lg font-semibold text-gray-900">${event.title}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Kode Event</label>
+                            <p class="text-gray-900 font-mono">${event.event_code}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Status</label>
+                            <div class="mt-1">${statusBadge[event.status]}</div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Olahraga</label>
+                            <p class="text-gray-900">${event.sport_name}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Lapangan</label>
+                            <p class="text-gray-900">${event.court_name}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Tanggal Event</label>
+                            <p class="text-gray-900"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i>${event.event_date_formatted}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Waktu</label>
+                            <p class="text-gray-900"><i class="fas fa-clock mr-2 text-green-500"></i>${event.start_time} - ${event.end_time}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Batas Pendaftaran</label>
+                            <p class="text-gray-900"><i class="fas fa-flag-checkered mr-2 text-red-500"></i>${event.registration_deadline_formatted}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Biaya Pendaftaran</label>
+                            <p class="text-gray-900 text-lg font-bold text-green-600">Rp ${event.registration_fee_formatted}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Kapasitas Tim</label>
+                            <p class="text-gray-900">
+                                <span class="font-semibold text-blue-600">${event.registered_teams_count}</span> / ${event.max_teams} tim
+                                <span class="text-sm text-gray-500">(${event.available_slots} slot tersisa)</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Deskripsi Event</label>
+                    <p class="text-gray-900 mt-1 whitespace-pre-line">${event.description}</p>
+                </div>
+                
+                ${event.requirements ? `
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Persyaratan</label>
+                        <p class="text-gray-900 mt-1 whitespace-pre-line">${event.requirements}</p>
+                    </div>
+                ` : ''}
+                
+                ${event.prize_info ? `
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Informasi Hadiah</label>
+                        <p class="text-gray-900 mt-1 whitespace-pre-line">${event.prize_info}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        document.getElementById('eventDetailContent').innerHTML = html;
+    }
+    
+    // Registrations Modal Functions
+    function openRegistrationsModal(eventId) {
+        document.getElementById('registrationsModal').classList.remove('hidden');
+        
+        // Show loading state
+        document.getElementById('registrationsContent').innerHTML = `
+            <div class="flex items-center justify-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i>
+            </div>
+        `;
+        
+        // Fetch registrations
+        fetch(`/admin/events/${eventId}/registrations-list`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayRegistrations(data.event, data.registrations);
+            } else {
+                document.getElementById('registrationsContent').innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                        <p class="text-gray-600">Gagal memuat daftar pendaftar</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('registrationsContent').innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                    <p class="text-gray-600">Terjadi kesalahan saat memuat data</p>
+                </div>
+            `;
+        });
+    }
+    
+    function closeRegistrationsModal() {
+        document.getElementById('registrationsModal').classList.add('hidden');
+    }
+    
+    function displayRegistrations(event, registrations) {
+        let html = `
+            <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
+                <h4 class="font-semibold text-gray-800 mb-2">${event.title}</h4>
+                <p class="text-sm text-gray-600">
+                    <i class="fas fa-users mr-2"></i>
+                    <span class="font-semibold text-blue-600">${event.registered_teams_count}</span> / ${event.max_teams} tim terdaftar
+                </p>
+            </div>
+        `;
+        
+        if (registrations.length === 0) {
+            html += `
+                <div class="text-center py-12">
+                    <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 text-lg">Belum ada pendaftar untuk event ini</p>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kode</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Tim</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah Anggota</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Daftar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+            `;
+            
+            registrations.forEach((reg, index) => {
+                const statusBadge = {
+                    'pending': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>',
+                    'confirmed': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Confirmed</span>',
+                    'cancelled': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Cancelled</span>'
+                };
+                
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-900">${index + 1}</td>
+                        <td class="px-4 py-3 text-sm font-mono text-gray-900">${reg.registration_code}</td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-medium text-gray-900">${reg.team_name}</div>
+                            <div class="text-xs text-gray-500">${reg.user_name}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm text-gray-900">${reg.contact_person}</div>
+                            <div class="text-xs text-gray-500">${reg.contact_phone}</div>
+                            <div class="text-xs text-gray-500">${reg.contact_email}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-center">${reg.team_members_count} orang</td>
+                        <td class="px-4 py-3">${statusBadge[reg.status]}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${reg.registered_at_formatted}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        document.getElementById('registrationsContent').innerHTML = html;
+    }
+    
+    // Close modals when clicking outside
+    document.getElementById('eventDetailModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeEventDetailModal();
+        }
+    });
+    
+    document.getElementById('registrationsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeRegistrationsModal();
+        }
+    });
 </script>
 @endpush

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', ['user', 'admin', 'owner'])->default('user');
             $table->enum('status', ['active', 'non-active']);
-            $table->string('telp')->nullable();
+            $table->string('phone_number')->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

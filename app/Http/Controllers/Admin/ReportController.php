@@ -224,4 +224,278 @@ class ReportController extends Controller
         
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Financial Report
+     */
+    public function financial(Request $request)
+    {
+        // Default date range: current month
+        $startDate = $request->filled('start_date') 
+            ? Carbon::parse($request->start_date) 
+            : now()->startOfMonth();
+        
+        $endDate = $request->filled('end_date') 
+            ? Carbon::parse($request->end_date) 
+            : now()->endOfMonth();
+
+        // Booking Revenue
+        $bookingRevenue = Booking::whereBetween('booking_date', [$startDate, $endDate])
+            ->whereIn('status', ['paid', 'completed'])
+            ->sum('total_price');
+
+        $bookingCount = Booking::whereBetween('booking_date', [$startDate, $endDate])
+            ->whereIn('status', ['paid', 'completed'])
+            ->count();
+
+        // Event Revenue
+        $eventRevenue = DB::table('event_registrations')
+            ->join('events', 'event_registrations.event_id', '=', 'events.id')
+            ->whereBetween('events.event_date', [$startDate, $endDate])
+            ->where('event_registrations.status', '!=', 'cancelled')
+            ->sum('event_registrations.registration_fee_paid');
+
+        $eventRegistrations = DB::table('event_registrations')
+            ->join('events', 'event_registrations.event_id', '=', 'events.id')
+            ->whereBetween('events.event_date', [$startDate, $endDate])
+            ->where('event_registrations.status', '!=', 'cancelled')
+            ->count();
+
+        // Total Revenue
+        $totalRevenue = $bookingRevenue + $eventRevenue;
+
+        // Revenue by Sport (Booking)
+        $bookingBySport = Booking::join('courts', 'bookings.court_id', '=', 'courts.id')
+            ->join('sports', 'courts.sport_id', '=', 'sports.id')
+            ->whereBetween('bookings.booking_date', [$startDate, $endDate])
+            ->whereIn('bookings.status', ['paid', 'completed'])
+            ->select(
+                'sports.name',
+                DB::raw('COUNT(bookings.id) as count'),
+                DB::raw('SUM(bookings.total_price) as revenue')
+            )
+            ->groupBy('sports.id', 'sports.name')
+            ->orderBy('revenue', 'desc')
+            ->get();
+
+        // Revenue by Sport (Event)
+        $eventBySport = DB::table('event_registrations')
+            ->join('events', 'event_registrations.event_id', '=', 'events.id')
+            ->join('sports', 'events.sport_id', '=', 'sports.id')
+            ->whereBetween('events.event_date', [$startDate, $endDate])
+            ->where('event_registrations.status', '!=', 'cancelled')
+            ->select(
+                'sports.name',
+                DB::raw('COUNT(event_registrations.id) as count'),
+                DB::raw('SUM(event_registrations.registration_fee_paid) as revenue')
+            )
+            ->groupBy('sports.id', 'sports.name')
+            ->orderBy('revenue', 'desc')
+            ->get();
+
+        // Monthly comparison (current year)
+        $monthlyData = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $monthStart = Carbon::create(now()->year, $month, 1)->startOfMonth();
+            $monthEnd = Carbon::create(now()->year, $month, 1)->endOfMonth();
+
+            $bookingMonthRevenue = Booking::whereBetween('booking_date', [$monthStart, $monthEnd])
+                ->whereIn('status', ['paid', 'completed'])
+                ->sum('total_price');
+
+            $eventMonthRevenue = DB::table('event_registrations')
+                ->join('events', 'event_registrations.event_id', '=', 'events.id')
+                ->whereBetween('events.event_date', [$monthStart, $monthEnd])
+                ->where('event_registrations.status', '!=', 'cancelled')
+                ->sum('event_registrations.registration_fee_paid');
+
+            $monthlyData[] = [
+                'month' => $month,
+                'month_name' => $monthStart->format('F'),
+                'booking_revenue' => $bookingMonthRevenue,
+                'event_revenue' => $eventMonthRevenue,
+                'total_revenue' => $bookingMonthRevenue + $eventMonthRevenue,
+            ];
+        }
+
+        // Top 5 Courts by Revenue
+        $topCourts = Booking::join('courts', 'bookings.court_id', '=', 'courts.id')
+            ->whereBetween('bookings.booking_date', [$startDate, $endDate])
+            ->whereIn('bookings.status', ['paid', 'completed'])
+            ->select(
+                'courts.name',
+                'courts.id',
+                DB::raw('COUNT(bookings.id) as booking_count'),
+                DB::raw('SUM(bookings.total_price) as revenue')
+            )
+            ->groupBy('courts.id', 'courts.name')
+            ->orderBy('revenue', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Top 5 Events by Revenue
+        $topEvents = DB::table('event_registrations')
+            ->join('events', 'event_registrations.event_id', '=', 'events.id')
+            ->whereBetween('events.event_date', [$startDate, $endDate])
+            ->where('event_registrations.status', '!=', 'cancelled')
+            ->select(
+                'events.title',
+                'events.id',
+                DB::raw('COUNT(event_registrations.id) as registration_count'),
+                DB::raw('SUM(event_registrations.registration_fee_paid) as revenue')
+            )
+            ->groupBy('events.id', 'events.title')
+            ->orderBy('revenue', 'desc')
+            ->limit(5)
+            ->get();
+
+        $stats = [
+            'total_revenue' => $totalRevenue,
+            'booking_revenue' => $bookingRevenue,
+            'event_revenue' => $eventRevenue,
+            'booking_count' => $bookingCount,
+            'event_registrations' => $eventRegistrations,
+        ];
+
+        return view('admin.report.financial', compact(
+            'stats',
+            'bookingBySport',
+            'eventBySport',
+            'monthlyData',
+            'topCourts',
+            'topEvents',
+            'startDate',
+            'endDate'
+        ));
+    }
+
+    /**
+     * Export Financial Report
+     */
+    public function exportFinancial(Request $request)
+    {
+        $startDate = $request->filled('start_date') 
+            ? Carbon::parse($request->start_date) 
+            : now()->startOfMonth();
+        
+        $endDate = $request->filled('end_date') 
+            ? Carbon::parse($request->end_date) 
+            : now()->endOfMonth();
+
+        // Get all bookings
+        $bookings = Booking::with(['user', 'court.sport'])
+            ->whereBetween('booking_date', [$startDate, $endDate])
+            ->whereIn('status', ['paid', 'completed'])
+            ->orderBy('booking_date', 'desc')
+            ->get();
+
+        // Get all event registrations
+        $eventRegistrations = DB::table('event_registrations')
+            ->join('events', 'event_registrations.event_id', '=', 'events.id')
+            ->join('users', 'event_registrations.user_id', '=', 'users.id')
+            ->join('sports', 'events.sport_id', '=', 'sports.id')
+            ->whereBetween('events.event_date', [$startDate, $endDate])
+            ->where('event_registrations.status', '!=', 'cancelled')
+            ->select(
+                'event_registrations.*',
+                'events.title as event_title',
+                'events.event_date',
+                'users.name as user_name',
+                'users.email as user_email',
+                'sports.name as sport_name'
+            )
+            ->orderBy('events.event_date', 'desc')
+            ->get();
+
+        $filename = 'laporan-keuangan-' . $startDate->format('Ymd') . '-' . $endDate->format('Ymd') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+        
+        $callback = function() use ($bookings, $eventRegistrations, $startDate, $endDate) {
+            $file = fopen('php://output', 'w');
+            
+            // Add BOM for UTF-8
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Title
+            fputcsv($file, ['LAPORAN KEUANGAN WIFA SPORT CENTER']);
+            fputcsv($file, ['Periode: ' . $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y')]);
+            fputcsv($file, ['']);
+            
+            // Booking Section
+            fputcsv($file, ['=== PENDAPATAN BOOKING ===']);
+            fputcsv($file, [
+                'Kode Booking',
+                'Tanggal',
+                'Pelanggan',
+                'Olahraga',
+                'Lapangan',
+                'Waktu',
+                'Total',
+                'Status'
+            ]);
+            
+            $totalBooking = 0;
+            foreach ($bookings as $booking) {
+                fputcsv($file, [
+                    $booking->booking_code,
+                    $booking->booking_date->format('Y-m-d'),
+                    $booking->user->name,
+                    $booking->court->sport->name,
+                    $booking->court->name,
+                    substr($booking->start_time, 0, 5) . ' - ' . substr($booking->end_time, 0, 5),
+                    $booking->total_price,
+                    $booking->status
+                ]);
+                $totalBooking += $booking->total_price;
+            }
+            
+            fputcsv($file, ['', '', '', '', '', 'TOTAL BOOKING:', 'Rp ' . number_format($totalBooking, 0, ',', '.')]);
+            fputcsv($file, ['']);
+            
+            // Event Section
+            fputcsv($file, ['=== PENDAPATAN EVENT ===']);
+            fputcsv($file, [
+                'Kode Registrasi',
+                'Event',
+                'Tanggal Event',
+                'Tim',
+                'Contact Person',
+                'Olahraga',
+                'Biaya Pendaftaran',
+                'Status'
+            ]);
+            
+            $totalEvent = 0;
+            foreach ($eventRegistrations as $reg) {
+                fputcsv($file, [
+                    $reg->registration_code,
+                    $reg->event_title,
+                    Carbon::parse($reg->event_date)->format('Y-m-d'),
+                    $reg->team_name,
+                    $reg->contact_person,
+                    $reg->sport_name,
+                    $reg->registration_fee_paid,
+                    $reg->status
+                ]);
+                $totalEvent += $reg->registration_fee_paid;
+            }
+            
+            fputcsv($file, ['', '', '', '', '', 'TOTAL EVENT:', 'Rp ' . number_format($totalEvent, 0, ',', '.')]);
+            fputcsv($file, ['']);
+            
+            // Summary
+            fputcsv($file, ['=== RINGKASAN ===']);
+            fputcsv($file, ['Total Pendapatan Booking:', 'Rp ' . number_format($totalBooking, 0, ',', '.')]);
+            fputcsv($file, ['Total Pendapatan Event:', 'Rp ' . number_format($totalEvent, 0, ',', '.')]);
+            fputcsv($file, ['TOTAL PENDAPATAN:', 'Rp ' . number_format($totalBooking + $totalEvent, 0, ',', '.')]);
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
 }

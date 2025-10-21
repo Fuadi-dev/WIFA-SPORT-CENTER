@@ -16,6 +16,7 @@ class Booking extends Model
         'user_id',
         'sport_id',
         'court_id',
+        'slug',
         'booking_date',
         'start_time',
         'end_time',
@@ -53,6 +54,9 @@ class Booking extends Model
             if (empty($booking->booking_code)) {
                 $booking->booking_code = $booking->generateBookingCode();
             }
+            if (empty($booking->slug)) {
+                $booking->slug = $booking->generateSlug();
+            }
         });
     }
 
@@ -62,6 +66,16 @@ class Booking extends Model
         $nextNumber = $lastBooking ? $lastBooking->id + 1 : 1;
         
         return 'WIFA-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function generateSlug()
+    {
+        $lastBooking = static::latest('id')->first();
+        $nextNumber = $lastBooking ? $lastBooking->id + 1 : 1;
+        
+        // Generate slug format: wifa-booking-001-timestamp
+        $timestamp = now()->format('Ymd');
+        return 'wifa-booking-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT) . '-' . $timestamp;
     }
 
     public function user()

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\MidtransService;
 use App\Services\WhatsAppService;
+use Illuminate\Support\Str;
 
 class BookingController extends Controller
 {
@@ -461,12 +462,15 @@ class BookingController extends Controller
         // Determine initial status based on payment method
         $initialStatus = $request->payment_method === 'cash' ? 'confirmed' : 'pending_payment';
         $confirmedAt = $request->payment_method === 'cash' ? now() : null;
+        $bookingCode = Str::random(10);
 
         // Create booking
         $booking = Booking::create([
+            'booking_code' => $bookingCode,
             'user_id' => Auth::id(),
             'sport_id' => $request->sport_id,
             'court_id' => $request->court_id,
+            'slug' => $bookingCode,
             'booking_date' => $request->date,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
@@ -491,7 +495,7 @@ class BookingController extends Controller
         $whatsappService = new WhatsAppService();
         $whatsappUrl = $whatsappService->generateBookingConfirmationUrl($booking);
 
-        return redirect()->route('booking.confirmation', $booking->id)
+        return redirect()->route('booking.confirmation', $booking->slug)
                         ->with('success', 'Pemesanan berhasil dibuat!')
                         ->with('whatsapp_url', $whatsappUrl);
     }
@@ -517,7 +521,7 @@ class BookingController extends Controller
             // Save the snap token to booking (redundant but safe)
             $booking->update(['midtrans_snap_token' => $snapToken]);
             
-            return redirect()->route('booking.confirmation', $booking->id)
+            return redirect()->route('booking.confirmation', $booking->slug)
                             ->with('success', 'Pemesanan berhasil dibuat! Silakan lakukan pembayaran.')
                             ->with('snap_token', $snapToken);
         } catch (\Exception $e) {

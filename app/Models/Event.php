@@ -187,33 +187,54 @@ class Event extends Model
     {
         $now = Carbon::now();
         $today = $now->format('Y-m-d');
-        $currentTime = $now->format('H:i:s');
         
         $eventDate = Carbon::parse($this->event_date)->format('Y-m-d');
         $registrationDeadline = Carbon::parse($this->registration_deadline)->format('Y-m-d');
         
+        // Normalize time format (handle both HH:MM:SS and HH:MM)
+        $startTime = is_string($this->start_time) ? $this->start_time : $this->start_time->format('H:i:s');
+        $endTime = is_string($this->end_time) ? $this->end_time : $this->end_time->format('H:i:s');
+        
+        // Ensure format is HH:MM:SS
+        if (strlen($startTime) === 5) {
+            $startTime .= ':00';
+        } elseif (strlen($startTime) === 8) {
+            // Already in HH:MM:SS format
+        }
+        
+        if (strlen($endTime) === 5) {
+            $endTime .= ':00';
+        } elseif (strlen($endTime) === 8) {
+            // Already in HH:MM:SS format
+        }
+        
+        // Create full datetime for comparison
+        $eventStartDateTime = Carbon::parse($eventDate . ' ' . $startTime);
+        $eventEndDateTime = Carbon::parse($eventDate . ' ' . $endTime);
+        $registrationDeadlineDateTime = Carbon::parse($registrationDeadline . ' 23:59:59');
+        
         $oldStatus = $this->status;
         
-        // Logic untuk mengupdate status:
-        // 1. Jika event sudah selesai (melewati tanggal event + end_time)
-        if ($today > $eventDate || ($today === $eventDate && $currentTime > $this->end_time)) {
+        // Logic untuk mengupdate status (berurutan dari paling spesifik):
+        
+        // 1. Jika event sudah selesai (melewati waktu selesai event)
+        if ($now->greaterThan($eventEndDateTime)) {
             $this->status = 'completed';
         }
-        // 2. Jika event sedang berlangsung (hari H event dan waktu >= start_time)
-        elseif ($today === $eventDate && $currentTime >= $this->start_time) {
+        // 2. Jika event sedang berlangsung (sudah melewati waktu mulai tapi belum selesai)
+        elseif ($now->greaterThanOrEqualTo($eventStartDateTime) && $now->lessThanOrEqualTo($eventEndDateTime)) {
             $this->status = 'ongoing';
         }
         // 3. Jika registration deadline sudah lewat tapi event belum dimulai
-        elseif ($today > $registrationDeadline || 
-                ($today === $registrationDeadline && $currentTime >= '23:59:59')) {
+        elseif ($now->greaterThan($registrationDeadlineDateTime) && $now->lessThan($eventStartDateTime)) {
             if ($this->status === 'open_registration') {
                 $this->status = 'registration_closed';
             }
         }
         // 4. Jika masih dalam periode registrasi dan status masih draft
-        elseif ($this->status === 'draft' && $today <= $registrationDeadline) {
-            // Bisa tetap draft atau bisa auto-aktifkan ke open_registration
-            // Untuk sekarang kita biarkan manual activation
+        elseif ($this->status === 'draft' && $now->lessThanOrEqualTo($registrationDeadlineDateTime)) {
+            // Status tetap draft - admin harus manual mengubah ke 'open_registration'
+            // Ini mencegah event yang belum siap langsung terbuka
         }
         
         // Save hanya jika status berubah dan bukan dry-run

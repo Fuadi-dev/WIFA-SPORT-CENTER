@@ -179,7 +179,7 @@
 
                             <!-- Action Buttons -->
                             <div class="flex flex-wrap gap-3">
-                                <a href="{{ route('booking.confirmation', $booking->id) }}" 
+                                <a href="{{ route('booking.confirmation', $booking->slug) }}" 
                                    class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-300">
                                     <i class="fas fa-eye mr-2"></i>Detail
                                 </a>

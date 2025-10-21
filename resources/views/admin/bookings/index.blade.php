@@ -271,7 +271,7 @@
                                 
                                 @if($canDelete)
                                     <button class="text-red-600 hover:text-red-900 p-1 rounded" 
-                                            onclick="confirmDelete({{ $booking->id }}, '{{ $booking->booking_code }}')"
+                                            onclick="confirmDelete('{{ $booking->slug }}', '{{ $booking->booking_code }}')"
                                             title="Hapus">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -340,9 +340,9 @@
 
 @push('scripts')
 <script>
-    function confirmDelete(bookingId, bookingCode) {
+    function confirmDelete(bookingSlug, bookingCode) {
         document.getElementById('deleteModal').classList.remove('hidden');
-        document.getElementById('deleteForm').action = `/admin/bookings/${bookingId}`;
+        document.getElementById('deleteForm').action = `/admin/bookings/${bookingSlug}`;
         document.getElementById('deleteBookingCode').textContent = bookingCode;
     }
     
@@ -386,34 +386,44 @@
                                     <i class="fas fa-user mr-2"></i>Informasi Penyewa
                                 </h4>
                                 
-                                <div class="mb-4">
-                                    <label class="flex items-center cursor-pointer mb-3">
-                                        <input type="radio" name="user_type" value="existing" class="mr-2" checked>
-                                        <span class="font-medium">Pilih User Existing</span>
-                                    </label>
-                                    <div id="existingUserDiv">
-                                        <input type="text" id="userSearch" placeholder="Cari nama atau email user..." 
-                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2">
-                                        <select id="userSelect" name="user_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <option value="">Pilih user...</option>
-                                        </select>
+                                <div class="relative">
+                                    <input type="text" id="userSearch" placeholder="Ketik untuk mencari nama atau email user..." 
+                                           class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2"
+                                           autocomplete="off">
+                                    <div id="searchLoading" class="hidden absolute right-3 top-2">
+                                        <i class="fas fa-spinner fa-spin text-blue-500"></i>
                                     </div>
                                 </div>
                                 
-                                <div class="mb-4">
-                                    <label class="flex items-center cursor-pointer mb-3">
-                                        <input type="radio" name="user_type" value="new" class="mr-2">
-                                        <span class="font-medium">Buat User Baru (Guest)</span>
-                                    </label>
-                                    <div id="newUserDiv" class="hidden space-y-3">
-                                        <input type="text" name="user_name" placeholder="Nama Lengkap" 
-                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <input type="email" name="user_email" placeholder="Email" 
-                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <input type="tel" name="user_phone" placeholder="Nomor HP" 
-                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <div id="userResults" class="hidden mb-2 max-h-60 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg">
+                                    <!-- Search results will appear here -->
+                                </div>
+                                
+                                <div id="selectedUserDisplay" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold mr-3">
+                                                <span id="selectedUserInitial">U</span>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold text-gray-900" id="selectedUserName">-</div>
+                                                <div class="text-sm text-gray-600" id="selectedUserEmail">-</div>
+                                                <div class="text-xs text-gray-500" id="selectedUserPhone">-</div>
+                                            </div>
+                                        </div>
+                                        <button type="button" onclick="clearUserSelection()" 
+                                                class="text-red-600 hover:text-red-800 px-2 py-1 rounded">
+                                            <i class="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
+                                
+                                <input type="hidden" id="userIdInput" name="user_id" required>
+                                
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Ketik minimal 2 karakter untuk memulai pencarian
+                                </p>
                             </div>
                             
                             <!-- Team Details -->
@@ -570,12 +580,11 @@
 
 <script>
 // Manual Booking Modal Functions
-let selectedUsers = [];
-let allUsers = [];
+let selectedUser = null;
+let searchTimeout = null;
 
 function openManualBookingModal() {
     document.getElementById('manualBookingModal').classList.remove('hidden');
-    loadUsers();
     resetForm();
 }
 
@@ -585,8 +594,11 @@ function closeManualBookingModal() {
 
 function resetForm() {
     document.getElementById('manualBookingForm').reset();
-    document.querySelector('input[name="user_type"][value="existing"]').checked = true;
-    toggleUserType();
+    
+    // Reset user selection
+    clearUserSelection();
+    document.getElementById('userSearch').value = '';
+    document.getElementById('userResults').classList.add('hidden');
     
     // Reset court select
     const courtSelect = document.getElementById('courtSelect');
@@ -605,65 +617,126 @@ function resetForm() {
     document.getElementById('submitBookingBtn').disabled = true;
 }
 
-function loadUsers() {
-    fetch('{{ route("admin.bookings.users") }}')
+// Real-time search dengan debounce
+document.getElementById('userSearch').addEventListener('input', function() {
+    const searchTerm = this.value.trim();
+    
+    // Clear previous timeout
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+    
+    // Hide results if search term is too short
+    if (searchTerm.length < 2) {
+        document.getElementById('userResults').classList.add('hidden');
+        document.getElementById('searchLoading').classList.add('hidden');
+        return;
+    }
+    
+    // Show loading indicator
+    document.getElementById('searchLoading').classList.remove('hidden');
+    
+    // Debounce search (wait 300ms after user stops typing)
+    searchTimeout = setTimeout(() => {
+        searchUsers(searchTerm);
+    }, 300);
+});
+
+function searchUsers(searchTerm) {
+    fetch(`{{ route("admin.bookings.users") }}?search=${encodeURIComponent(searchTerm)}`)
         .then(response => response.json())
         .then(data => {
-            allUsers = data.users || [];
-            updateUserSelect(allUsers);
+            displayUserResults(data.users || []);
+            document.getElementById('searchLoading').classList.add('hidden');
         })
         .catch(error => {
-            console.error('Error loading users:', error);
+            console.error('Error searching users:', error);
+            document.getElementById('searchLoading').classList.add('hidden');
+            document.getElementById('userResults').innerHTML = 
+                '<div class="p-4 text-center text-red-600"><i class="fas fa-exclamation-circle mr-2"></i>Error loading users</div>';
+            document.getElementById('userResults').classList.remove('hidden');
         });
 }
 
-function updateUserSelect(users) {
-    const userSelect = document.getElementById('userSelect');
-    userSelect.innerHTML = '<option value="">Pilih user...</option>';
+function displayUserResults(users) {
+    const resultsContainer = document.getElementById('userResults');
     
+    if (users.length === 0) {
+        resultsContainer.innerHTML = 
+            '<div class="p-4 text-center text-gray-500"><i class="fas fa-search mr-2"></i>Tidak ada user ditemukan</div>';
+        resultsContainer.classList.remove('hidden');
+        return;
+    }
+    
+    let html = '<div class="divide-y divide-gray-200">';
     users.forEach(user => {
-        const option = document.createElement('option');
-        option.value = user.id;
-        option.textContent = `${user.name} (${user.email})`;
-        userSelect.appendChild(option);
+        const initial = user.name.charAt(0).toUpperCase();
+        html += `
+            <div class="p-3 hover:bg-blue-50 cursor-pointer transition-colors" 
+                 onclick='selectUser(${JSON.stringify(user)})'>
+                <div class="flex items-center">
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm mr-3">
+                        ${initial}
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">${user.name}</div>
+                        <div class="text-sm text-gray-600">${user.email}</div>
+                        ${user.phone ? `<div class="text-xs text-gray-500">${user.phone}</div>` : ''}
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </div>
+        `;
     });
+    html += '</div>';
+    
+    resultsContainer.innerHTML = html;
+    resultsContainer.classList.remove('hidden');
 }
 
-// User search functionality
-document.getElementById('userSearch').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const filteredUsers = allUsers.filter(user => 
-        user.name.toLowerCase().includes(searchTerm) || 
-        user.email.toLowerCase().includes(searchTerm)
-    );
-    updateUserSelect(filteredUsers);
-});
-
-// User type toggle
-document.querySelectorAll('input[name="user_type"]').forEach(radio => {
-    radio.addEventListener('change', toggleUserType);
-});
-
-function toggleUserType() {
-    const userType = document.querySelector('input[name="user_type"]:checked').value;
-    const existingUserDiv = document.getElementById('existingUserDiv');
-    const newUserDiv = document.getElementById('newUserDiv');
+function selectUser(user) {
+    selectedUser = user;
     
-    if (userType === 'existing') {
-        existingUserDiv.classList.remove('hidden');
-        newUserDiv.classList.add('hidden');
-        // Clear new user inputs
-        document.querySelector('input[name="user_name"]').value = '';
-        document.querySelector('input[name="user_email"]').value = '';
-        document.querySelector('input[name="user_phone"]').value = '';
-    } else {
-        existingUserDiv.classList.add('hidden');
-        newUserDiv.classList.remove('hidden');
-        // Clear user select
-        document.getElementById('userSelect').value = '';
-    }
+    // Hide search results
+    document.getElementById('userResults').classList.add('hidden');
+    document.getElementById('userSearch').value = '';
+    
+    // Update hidden input
+    document.getElementById('userIdInput').value = user.id;
+    
+    // Display selected user
+    const initial = user.name.charAt(0).toUpperCase();
+    document.getElementById('selectedUserInitial').textContent = initial;
+    document.getElementById('selectedUserName').textContent = user.name;
+    document.getElementById('selectedUserEmail').textContent = user.email;
+    document.getElementById('selectedUserPhone').textContent = user.phone || 'No phone';
+    document.getElementById('selectedUserDisplay').classList.remove('hidden');
+    
     checkFormValidity();
 }
+
+function clearUserSelection() {
+    selectedUser = null;
+    document.getElementById('userIdInput').value = '';
+    document.getElementById('selectedUserDisplay').classList.add('hidden');
+    document.getElementById('userSearch').value = '';
+    document.getElementById('userResults').classList.add('hidden');
+    checkFormValidity();
+}
+
+// Close search results when clicking outside
+document.addEventListener('click', function(e) {
+    const userSearch = document.getElementById('userSearch');
+    const userResults = document.getElementById('userResults');
+    const selectedUserDisplay = document.getElementById('selectedUserDisplay');
+    
+    if (userSearch && userResults && 
+        !userSearch.contains(e.target) && 
+        !userResults.contains(e.target) &&
+        !selectedUserDisplay.contains(e.target)) {
+        userResults.classList.add('hidden');
+    }
+});
 
 // Load courts based on sport selection
 async function loadCourtsForBooking(sportId) {
@@ -824,7 +897,6 @@ document.getElementById('endTimeSelect').addEventListener('change', function() {
 
 // Form validation
 function checkFormValidity() {
-    const userType = document.querySelector('input[name="user_type"]:checked').value;
     const teamName = document.querySelector('input[name="team_name"]').value;
     const sportId = document.getElementById('sportSelect').value;
     const courtId = document.getElementById('courtSelect').value;
@@ -832,15 +904,8 @@ function checkFormValidity() {
     const startTime = document.getElementById('startTimeSelect').value;
     const endTime = document.getElementById('endTimeSelect').value;
     
-    let userValid = false;
-    if (userType === 'existing') {
-        userValid = document.getElementById('userSelect').value !== '';
-    } else {
-        const userName = document.querySelector('input[name="user_name"]').value;
-        const userEmail = document.querySelector('input[name="user_email"]').value;
-        const userPhone = document.querySelector('input[name="user_phone"]').value;
-        userValid = userName && userEmail && userPhone;
-    }
+    // User must be selected
+    const userValid = selectedUser !== null && document.getElementById('userIdInput').value !== '';
     
     const isValid = userValid && teamName && sportId && courtId && selectedDate && startTime && endTime;
     
@@ -848,11 +913,7 @@ function checkFormValidity() {
 }
 
 // Add event listeners for form validation
-document.getElementById('userSelect').addEventListener('change', checkFormValidity);
 document.querySelector('input[name="team_name"]').addEventListener('input', checkFormValidity);
-document.querySelector('input[name="user_name"]').addEventListener('input', checkFormValidity);
-document.querySelector('input[name="user_email"]').addEventListener('input', checkFormValidity);
-document.querySelector('input[name="user_phone"]').addEventListener('input', checkFormValidity);
 document.getElementById('sportSelect').addEventListener('change', function() {
     checkFormValidity();
     calculatePrice(); // Recalculate price when sport changes

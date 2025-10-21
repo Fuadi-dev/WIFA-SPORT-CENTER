@@ -27,7 +27,7 @@ class User extends Authenticatable
         'avatar',
         'provider',
         'status',
-        'telp',
+        'phone_number',
     ];
 
     /**
@@ -59,5 +59,13 @@ class User extends Authenticatable
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Get the event registrations for the user.
+     */
+    public function eventRegistrations()
+    {
+        return $this->hasMany(EventRegistration::class);
     }
 }

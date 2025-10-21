@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('sport_id')->constrained('sports')->onDelete('cascade');
             $table->foreignId('court_id')->constrained('courts')->onDelete('cascade');
+            $table->string('slug')->unique()->nullable();
             $table->date('booking_date');
             $table->time('start_time');
             $table->time('end_time');

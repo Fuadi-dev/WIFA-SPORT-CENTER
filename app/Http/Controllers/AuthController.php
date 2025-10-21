@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Laravel\Socialite\Facades\Socialite;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -89,14 +90,23 @@ class AuthController extends Controller
     public function postRegister(Request $request)
     {
         try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:8|confirmed',
-                'telp' => 'required|string|max:15|regex:/^(0|62)\d{9,13}$/',
+            // Validate input data
+            $validator = Validator::make($request->all(), [
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'unique:users,email'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+                'phone_number' => ['required', 'string', 'max:15', 'regex:/^(0|62)\d{9,13}$/'],
             ], [
-                'telp.regex' => 'Format nomor WhatsApp tidak valid. Gunakan format 08xxx atau 62xxx.'
+                'phone_number.regex' => 'Format nomor WhatsApp tidak valid. Gunakan format 08xxx atau 62xxx.'
             ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data tidak valid.',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
             $uniqueEmail = User::where('email', $request->email)->first();
 
@@ -107,18 +117,43 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            // Normalize phone number
-            $phoneNumber = $request->telp;
+            // Normalize phone number first before checking duplicates
+            $phoneNumber = $request->phone_number;
+            $alternateFormat = '';
+            
+            Log::info('Phone number normalization:', [
+                'original' => $phoneNumber,
+                'starts_with' => substr($phoneNumber, 0, 2)
+            ]);
+            
             if (substr($phoneNumber, 0, 1) === '0') {
+                // Convert 08xxx to 62xxx
                 $phoneNumber = '62' . substr($phoneNumber, 1);
+                $alternateFormat = $request->phone_number; // Keep original 08xxx
+            } else if (substr($phoneNumber, 0, 2) === '62') {
+                // Convert 62xxx to 08xxx for alternate check
+                $alternateFormat = '0' . substr($phoneNumber, 2);
             }
 
+            Log::info('Phone number after normalization:', [
+                'normalized' => $phoneNumber,
+                'alternate' => $alternateFormat
+            ]);
+
             // Check if phone number already exists (check both formats)
-            $existingPhone = User::where('telp', $phoneNumber)
-                ->orWhere('telp', '0' . substr($phoneNumber, 2))
-                ->first();
+            $existingPhone = User::where('phone_number', $phoneNumber);
+            
+            if ($alternateFormat) {
+                $existingPhone = $existingPhone->orWhere('phone_number', $alternateFormat);
+            }
+            
+            $existingPhone = $existingPhone->first();
 
             if ($existingPhone) {
+                Log::info('Duplicate phone found:', [
+                    'existing_phone' => $existingPhone->phone_number,
+                    'input_phone' => $request->phone_number
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Nomor WhatsApp sudah terdaftar. Silakan gunakan nomor lain.'
@@ -130,7 +165,7 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => 'user',
-                'telp' => $phoneNumber,
+                'phone_number' => $phoneNumber,
             ]);
             
             $credentials = $request->only('email', 'password');
@@ -149,10 +184,21 @@ class AuthController extends Controller
                 }
             }
         } 
-        catch (\Exception $e) {
+        catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan. Silakan coba lagi.'
+                'message' => 'Data tidak valid.',
+                'errors' => $e->errors()
+            ], 422);
+        }
+        catch (\Exception $e) {
+            Log::error('Registration error:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -297,10 +343,10 @@ class AuthController extends Controller
                 }
 
                 // Send welcome message if WhatsApp is available
-                if ($user->telp) {
-                    Log::info('Sending WhatsApp welcome message', ['telp' => $user->telp]);
+                if ($user->phone_number) {
+                    Log::info('Sending WhatsApp welcome message', ['phone_number' => $user->phone_number]);
                     try {
-                        $this->whatsappService->sendWelcomeMessage($user->telp, $user->name);
+                        $this->whatsappService->sendWelcomeMessage($user->phone_number, $user->name);
                     } catch (\Exception $whatsappError) {
                         Log::warning('WhatsApp message failed but continuing:', ['error' => $whatsappError->getMessage()]);
                     }
@@ -335,7 +381,7 @@ class AuthController extends Controller
             Log::info('OAuth flow completed successfully, checking WhatsApp number');
             
             // Check if user needs to setup WhatsApp number
-            if (!$user->telp) {
+            if (!$user->phone_number) {
                 Log::info('User needs to setup WhatsApp', ['user_id' => $user->id]);
                 return redirect('/whatsapp-setup')->with('info', 'Silakan tambahkan nomor WhatsApp untuk notifikasi booking.');
             }
@@ -374,7 +420,7 @@ class AuthController extends Controller
         }
 
         // If user already has WhatsApp number, redirect to home
-        if (Auth::user()->telp) {
+        if (Auth::user()->phone_number) {
             return redirect('/')->with('info', 'Nomor WhatsApp sudah terdaftar.');
         }
 
@@ -405,30 +451,44 @@ class AuthController extends Controller
 
             // Validate phone number
             $request->validate([
-                'telp' => [
+                'phone_number' => [
                     'required',
                     'string',
                     'regex:/^(0|62)\d{9,13}$/',
                     'max:15'
                 ],
             ], [
-                'telp.required' => 'Nomor WhatsApp wajib diisi.',
-                'telp.regex' => 'Format nomor tidak valid. Gunakan format 08xxx atau 62xxx.',
-                'telp.max' => 'Nomor terlalu panjang.'
+                'phone_number.required' => 'Nomor WhatsApp wajib diisi.',
+                'phone_number.regex' => 'Format nomor tidak valid. Gunakan format 08xxx atau 62xxx.',
+                'phone_number.max' => 'Nomor terlalu panjang.'
             ]);
 
-            $phoneNumber = $request->telp;
+            $phoneNumber = $request->phone_number;
 
             // Normalize phone number (convert 08xx to 628xx)
+            $alternateFormat = '';
+            
             if (substr($phoneNumber, 0, 1) === '0') {
+                // Convert 08xxx to 62xxx
                 $phoneNumber = '62' . substr($phoneNumber, 1);
+                $alternateFormat = $request->phone_number; // Keep original 08xxx
+            } else if (substr($phoneNumber, 0, 2) === '62') {
+                // Convert 62xxx to 08xxx for alternate check
+                $alternateFormat = '0' . substr($phoneNumber, 2);
             }
 
             // Check if phone number already exists (check both formats)
-            $existingUser = User::where('telp', $phoneNumber)
-                ->orWhere('telp', '0' . substr($phoneNumber, 2))
-                ->where('id', '!=', $user->id)
-                ->first();
+            $existingUser = User::where('phone_number', $phoneNumber)
+                ->where('id', '!=', $user->id);
+            
+            if ($alternateFormat) {
+                $existingUser = $existingUser->orWhere(function($query) use ($alternateFormat, $user) {
+                    $query->where('phone_number', $alternateFormat)
+                          ->where('id', '!=', $user->id);
+                });
+            }
+            
+            $existingUser = $existingUser->first();
 
             if ($existingUser) {
                 return response()->json([
@@ -438,18 +498,18 @@ class AuthController extends Controller
             }
 
             // Update user's phone number
-            $user->telp = $phoneNumber;
+            $user->phone_number = $phoneNumber;
             $user->save();
 
             Log::info('WhatsApp number added successfully', [
                 'user_id' => $user->id,
-                'telp' => $phoneNumber
+                'phone_number' => $phoneNumber
             ]);
 
             // Send welcome message
             try {
                 $this->whatsappService->sendWelcomeMessage($phoneNumber, $user->name);
-                Log::info('Welcome WhatsApp message sent', ['telp' => $phoneNumber]);
+                Log::info('Welcome WhatsApp message sent', ['phone_number' => $phoneNumber]);
             } catch (\Exception $whatsappError) {
                 Log::warning('WhatsApp message failed but continuing', [
                     'error' => $whatsappError->getMessage()
@@ -475,7 +535,7 @@ class AuthController extends Controller
             ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan. Silakan coba lagi.'
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
             ], 500);
         }
     }

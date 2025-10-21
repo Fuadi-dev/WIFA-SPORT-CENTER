@@ -197,6 +197,7 @@ class BookingController extends Controller
                 'user_id' => $user->id,
                 'sport_id' => $request->sport_id,
                 'court_id' => $request->court_id,
+                'slug' => $bookingCode,
                 'team_name' => $request->team_name,
                 'contact_person' => $request->contact_person ?: $user->name,
                 'booking_date' => $request->date,
@@ -227,10 +228,22 @@ class BookingController extends Controller
 
     public function getUsers(Request $request)
     {
-        $users = User::where('role', 'user')
-                    ->select('id', 'name', 'email', 'phone_number')
-                    ->orderBy('name')
-                    ->get();
+        $query = User::where('role', 'user')
+                    ->select('id', 'name', 'email', 'phone_number as phone');
+        
+        // Real-time search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone_number', 'like', "%{$search}%");
+            });
+        }
+        
+        $users = $query->orderBy('name')
+                      ->limit(20) // Limit hasil untuk performa
+                      ->get();
         
         return response()->json([
             'users' => $users

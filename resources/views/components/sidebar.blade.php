@@ -75,13 +75,11 @@
                     Laporan Booking
                 </a>
                 
-                @if(auth()->user()->role === 'owner')
                     <!-- Financial Reports -->
-                    <a href="{{ url('admin.reports.financial') ?? '#' }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.financial') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                    <a href="{{ route('admin.reports.financial') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.reports.financial') ? 'active' : 'text-amber-100 hover:text-white' }}">
                         <i class="fas fa-money-bill-wave w-5 mr-3"></i>
                         Laporan Keuangan
                     </a>
-                @endif
                
             </div>
             

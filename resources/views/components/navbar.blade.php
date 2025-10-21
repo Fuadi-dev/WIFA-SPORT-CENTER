@@ -53,7 +53,7 @@
                             <div class="absolute right-0 mt-2 w-48 bg-amber-950/95 backdrop-blur-sm rounded-md shadow-lg border border-amber-800/30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                                 <div class="py-2">
                                     <a href="{{ url('/my-bookings') }}" class="block px-4 py-2 text-white hover:text-amber-300 hover:bg-amber-800/20 transition-colors duration-200 {{ request()->routeIs('my-bookings') ? 'text-amber-300 bg-amber-800/20' : '' }}">
-                                        <i class="fas fa-calendar mr-2"></i>Pemesanan Saya
+                                        <i class="fas fa-calendar mr-2"></i>Pesanan Saya
                                     </a>
                                     <hr class="border-amber-800/30 my-1">
                                     <form action="{{ route('logout') }}" method="POST" class="block">
@@ -122,7 +122,7 @@
                     
                     <!-- User Menu Items -->
                     <a href="{{ url('/my-bookings') }}" class="text-white hover:text-amber-300 block px-4 py-3 rounded-md text-lg font-semibold tracking-wide hover:bg-amber-800/20 transition-all duration-300 {{ request()->routeIs('my-bookings') ? 'text-amber-300 bg-amber-800/30' : '' }}">
-                        <i class="fas fa-calendar mr-3"></i>Pemesanan Saya
+                        <i class="fas fa-calendar mr-3"></i>Pesanan Saya
                     </a>
                     <form action="{{ route('logout') }}" method="POST" class="block">
                         @csrf

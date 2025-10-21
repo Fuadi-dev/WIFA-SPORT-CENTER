@@ -65,9 +65,9 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/users', [ManagementBookingController::class, 'getUsers'])->name('users');
                 Route::post('/check-availability', [BookingController::class, 'checkAvailability'])->name('check-availability');
                 Route::get('/courts-by-sport/{sport}', [ManagementBookingController::class, 'getCourtsBySport'])->name('courts-by-sport');
-                Route::get('/{booking}', [ManagementBookingController::class, 'show'])->name('show');
-                Route::patch('/{booking}/status', [ManagementBookingController::class, 'updateStatus'])->name('updateStatus');
-                Route::delete('/{booking}', [ManagementBookingController::class, 'destroy'])->name('destroy');
+                Route::get('/{booking:slug}', [ManagementBookingController::class, 'show'])->name('show');
+                Route::patch('/{booking:slug}/status', [ManagementBookingController::class, 'updateStatus'])->name('updateStatus');
+                Route::delete('/{booking:slug}', [ManagementBookingController::class, 'destroy'])->name('destroy');
                 Route::get('/export/data', [ManagementBookingController::class, 'export'])->name('export');
             });
             
@@ -79,6 +79,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/courts-by-sport/{sport}', [ManagementEventController::class, 'getCourtsBySport'])->name('courts-by-sport');
                 Route::get('/{event:id}', [ManagementEventController::class, 'show'])->name('show');
                 Route::get('/{event:id}/edit', [ManagementEventController::class, 'edit'])->name('edit');
+                Route::get('/{event:id}/detail', [ManagementEventController::class, 'getEventDetail'])->name('detail');
+                Route::get('/{event:id}/registrations-list', [ManagementEventController::class, 'getEventRegistrations'])->name('registrations-list');
                 Route::patch('/{event:id}', [ManagementEventController::class, 'update'])->name('update');
                 Route::delete('/{event:id}', [ManagementEventController::class, 'destroy'])->name('destroy');
                 Route::get('/{event:id}/registrations', [ManagementEventController::class, 'registrations'])->name('registrations');
@@ -91,6 +93,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/create', [ManagementUserController::class, 'create'])->name('create');
                 Route::post('/', [ManagementUserController::class, 'store'])->name('store');
                 Route::get('/{user}', [ManagementUserController::class, 'show'])->name('show');
+                Route::get('/{user}/detail', [ManagementUserController::class, 'getUserDetail'])->name('detail');
                 Route::delete('/{user}', [ManagementUserController::class, 'destroy'])->name('destroy');
                 Route::patch('/{user}/toggle-status', [ManagementUserController::class, 'toggleStatus'])->name('toggleStatus');
             });
@@ -101,6 +104,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/bookings/export', [ReportController::class, 'exportBookings'])->name('bookings.export');
                 Route::get('/bookings/by-month', [ReportController::class, 'bookingsByMonth'])->name('bookings.by-month');
                 Route::get('/bookings/by-sport', [ReportController::class, 'bookingsBySport'])->name('bookings.by-sport');
+                Route::get('/financial', [ReportController::class, 'financial'])->name('financial');
+                Route::get('/financial/export', [ReportController::class, 'exportFinancial'])->name('financial.export');
             });
             
             // Admin Promo Code Management
@@ -132,12 +137,12 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/schedule/{sport:slug}/{court:slug}', [BookingController::class, 'showSchedule'])->name('booking.schedule');
             Route::get('/form', [BookingController::class, 'showBookingForm'])->name('booking.form');
             Route::post('/store', [BookingController::class, 'store'])->name('booking.store');
-            Route::get('/confirmation/{booking}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
+            Route::get('/confirmation/{booking:slug}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
             Route::post('/check-availability', [BookingController::class, 'checkAvailability'])->name('booking.check-availability');
             Route::post('/get-price', [BookingController::class, 'getPriceForTimeRange'])->name('booking.get-price');
             
             // Midtrans payment routes
-            Route::get('/payment-status/{booking}', [BookingController::class, 'checkPaymentStatus'])->name('booking.payment-status');
+            Route::get('/payment-status/{booking:slug}', [BookingController::class, 'checkPaymentStatus'])->name('booking.payment-status');
             
             // Legacy route
             Route::get('/olahraga', [BookingController::class, 'olahraga']);

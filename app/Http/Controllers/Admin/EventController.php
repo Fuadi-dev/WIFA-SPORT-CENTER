@@ -362,4 +362,84 @@ class EventController extends Controller
             'courts' => $courts
         ]);
     }
+
+    /**
+     * Get event detail for modal (AJAX endpoint)
+     */
+    public function getEventDetail(Event $event)
+    {
+        // Auto-update status before showing
+        $event->checkAndUpdateStatus();
+        
+        $event->load(['sport', 'court', 'registrations']);
+        
+        return response()->json([
+            'success' => true,
+            'event' => [
+                'id' => $event->id,
+                'event_code' => $event->event_code,
+                'title' => $event->title,
+                'description' => $event->description,
+                'sport_name' => $event->sport->name,
+                'court_name' => $event->court->name,
+                'event_date_formatted' => $event->event_date->format('d F Y'),
+                'start_time' => is_string($event->start_time) 
+                    ? (strlen($event->start_time) === 8 ? substr($event->start_time, 0, 5) : $event->start_time)
+                    : $event->start_time->format('H:i'),
+                'end_time' => is_string($event->end_time) 
+                    ? (strlen($event->end_time) === 8 ? substr($event->end_time, 0, 5) : $event->end_time)
+                    : $event->end_time->format('H:i'),
+                'registration_deadline_formatted' => $event->registration_deadline->format('d F Y'),
+                'registration_fee' => $event->registration_fee,
+                'registration_fee_formatted' => number_format($event->registration_fee, 0, ',', '.'),
+                'max_teams' => $event->max_teams,
+                'registered_teams_count' => $event->registered_teams_count,
+                'available_slots' => $event->available_slots,
+                'requirements' => $event->requirements,
+                'prize_info' => $event->prize_info,
+                'status' => $event->status,
+                'poster' => $event->poster,
+                'poster_url' => $event->poster_url
+            ]
+        ]);
+    }
+
+    /**
+     * Get event registrations for modal (AJAX endpoint)
+     */
+    public function getEventRegistrations(Event $event)
+    {
+        // Auto-update status before showing
+        $event->checkAndUpdateStatus();
+        
+        $registrations = $event->registrations()
+            ->with(['user'])
+            ->orderBy('registered_at', 'desc')
+            ->get()
+            ->map(function($reg) {
+                return [
+                    'id' => $reg->id,
+                    'registration_code' => $reg->registration_code,
+                    'team_name' => $reg->team_name,
+                    'user_name' => $reg->user->name,
+                    'contact_person' => $reg->contact_person,
+                    'contact_phone' => $reg->contact_phone,
+                    'contact_email' => $reg->contact_email,
+                    'team_members_count' => is_array($reg->team_members) ? count($reg->team_members) : 0,
+                    'status' => $reg->status,
+                    'registered_at_formatted' => $reg->registered_at->format('d M Y H:i'),
+                ];
+            });
+        
+        return response()->json([
+            'success' => true,
+            'event' => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'max_teams' => $event->max_teams,
+                'registered_teams_count' => $event->registered_teams_count,
+            ],
+            'registrations' => $registrations
+        ]);
+    }
 }

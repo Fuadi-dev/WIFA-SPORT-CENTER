@@ -214,7 +214,7 @@
                         $bookingDateTime = $bookingDate->setTimeFromTimeString($booking->start_time);
                         $canDelete = $bookingDateTime->isFuture();
                     @endphp                @if($canDelete)
-                    <button onclick="confirmDelete({{ $booking->id }}, '{{ $booking->booking_code }}')" 
+                    <button onclick="confirmDelete('{{ $booking->slug }}', '{{ $booking->booking_code }}')" 
                             class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                         <i class="fas fa-trash mr-2"></i>Hapus Booking
                     </button>
@@ -318,9 +318,9 @@
 
 @push('scripts')
 <script>
-    function confirmDelete(bookingId, bookingCode) {
+    function confirmDelete(bookingSlug, bookingCode) {
         document.getElementById('deleteModal').classList.remove('hidden');
-        document.getElementById('deleteForm').action = `/admin/bookings/${bookingId}`;
+        document.getElementById('deleteForm').action = `/admin/bookings/${bookingSlug}`;
         document.getElementById('deleteBookingCode').textContent = bookingCode;
     }
     
