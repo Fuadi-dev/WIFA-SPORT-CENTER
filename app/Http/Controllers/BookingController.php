@@ -156,11 +156,20 @@ class BookingController extends Controller
     private function calculateTotalPrice($startTime, $endTime, $sport = null, $date = null)
     {
         $start = Carbon::parse($startTime);
-        $end = Carbon::parse($endTime);
-        $totalPrice = 0;
         
+        // Handle end time specially if it's "24:00" (midnight)
+        if ($endTime === '24:00') {
+            $endHour = 24;
+        } else {
+            $end = Carbon::parse($endTime);
+            $endHour = $end->hour;
+        }
+        
+        $totalPrice = 0;
         $currentHour = $start->hour;
-        while ($currentHour < $end->hour) {
+        
+        // Make sure we don't go beyond hour 24
+        while ($currentHour < $endHour && $currentHour < 24) {
             $totalPrice += $this->getPriceByHour($currentHour, $sport, $date);
             $currentHour++;
         }
@@ -223,56 +232,116 @@ class BookingController extends Controller
     // Get price for time range (AJAX)
     public function getPriceForTimeRange(Request $request)
     {
-        $startTime = $request->start_time;
-        $duration = $request->duration;
-        $sportId = $request->sport_id;
-        $date = $request->date;
-        
-        $sport = $sportId ? Sport::find($sportId) : null;
-        
-        // Debug weekend detection
-        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
-        $isWeekend = in_array($dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]);
-        Log::info('Price calculation debug', [
-            'date' => $date,
-            'dayOfWeek' => $dayOfWeek,
-            'dayName' => Carbon::parse($date)->format('l'),
-            'isWeekend' => $isWeekend,
-            'sport' => $sport ? $sport->name : 'null',
-            'startTime' => $startTime,
-            'duration' => $duration
-        ]);
-        
-        $start = Carbon::parse($startTime);
-        $end = $start->copy()->addHours($duration);
-        $endTime = $end->format('H:i');
-        
-        $totalPrice = $this->calculateTotalPrice($startTime, $endTime, $sport, $date);
-        
-        // Get price breakdown by hour
-        $priceBreakdown = [];
-        $currentHour = $start->hour;
-        for ($i = 0; $i < $duration; $i++) {
-            $hourPrice = $this->getPriceByHour($currentHour, $sport, $date);
-            $category = $this->getPriceCategoryByHour($currentHour);
-            $priceBreakdown[] = [
-                'hour' => sprintf('%02d:00-%02d:00', $currentHour, $currentHour + 1),
-                'price' => $hourPrice,
-                'category' => $category
-            ];
-            $currentHour++;
+        try {
+            $startTime = $request->start_time;
+            $duration = (int) $request->duration;
+            $sportId = $request->sport_id;
+            $date = $request->date;
+            
+            // Validate input
+            if (!$startTime || !$duration || !$date) {
+                return response()->json([
+                    'error' => 'Missing required parameters',
+                    'total_price' => 0,
+                    'end_time' => '00:00',
+                    'price_breakdown' => []
+                ], 400);
+            }
+            
+            $sport = $sportId ? Sport::find($sportId) : null;
+            
+            // Debug weekend detection
+            $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+            $isWeekend = in_array($dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]);
+            Log::info('Price calculation debug', [
+                'date' => $date,
+                'dayOfWeek' => $dayOfWeek,
+                'dayName' => Carbon::parse($date)->format('l'),
+                'isWeekend' => $isWeekend,
+                'sport' => $sport ? $sport->name : 'null',
+                'startTime' => $startTime,
+                'duration' => $duration
+            ]);
+            
+            $start = Carbon::parse($startTime);
+            $startHour = $start->hour;
+            
+            // Calculate actual duration (don't exceed 24:00)
+            $actualDuration = min($duration, 24 - $startHour);
+            $endHour = $startHour + $actualDuration;
+            
+            // Format end time
+            if ($endHour >= 24) {
+                $endTime = '24:00';
+            } else {
+                $endTime = sprintf('%02d:00', $endHour);
+            }
+            
+            Log::info('Duration calculation', [
+                'startHour' => $startHour,
+                'requestedDuration' => $duration,
+                'actualDuration' => $actualDuration,
+                'endHour' => $endHour,
+                'endTime' => $endTime
+            ]);
+            
+            // Calculate total price
+            $totalPrice = 0;
+            $priceBreakdown = [];
+            
+            for ($i = 0; $i < $actualDuration; $i++) {
+                $currentHour = $startHour + $i;
+                
+                // Safety check
+                if ($currentHour >= 24) {
+                    Log::warning('Hour exceeded 24', ['currentHour' => $currentHour, 'i' => $i]);
+                    break;
+                }
+                
+                $nextHour = min($currentHour + 1, 24);
+                $hourPrice = $this->getPriceByHour($currentHour, $sport, $date);
+                $category = $this->getPriceCategoryByHour($currentHour);
+                
+                $totalPrice += $hourPrice;
+                
+                $priceBreakdown[] = [
+                    'hour' => sprintf('%02d:00-%02d:00', $currentHour, $nextHour),
+                    'price' => $hourPrice,
+                    'category' => $category
+                ];
+            }
+            
+            Log::info('Price calculation result', [
+                'totalPrice' => $totalPrice,
+                'breakdownCount' => count($priceBreakdown),
+                'actualDuration' => $actualDuration,
+                'endTime' => $endTime
+            ]);
+            
+            return response()->json([
+                'total_price' => $totalPrice,
+                'end_time' => $endTime,
+                'price_breakdown' => $priceBreakdown,
+                'debug' => [
+                    'actualDuration' => $actualDuration,
+                    'startHour' => $startHour,
+                    'endHour' => $endHour
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error in getPriceForTimeRange', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Internal server error: ' . $e->getMessage(),
+                'total_price' => 0,
+                'end_time' => '00:00',
+                'price_breakdown' => []
+            ], 500);
         }
-        
-        Log::info('Price calculation result', [
-            'totalPrice' => $totalPrice,
-            'priceBreakdown' => $priceBreakdown
-        ]);
-        
-        return response()->json([
-            'total_price' => $totalPrice,
-            'end_time' => $endTime,
-            'price_breakdown' => $priceBreakdown
-        ]);
     }
 
         // Step 4: Fill Booking Details

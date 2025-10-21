@@ -54,6 +54,28 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
         }
+        
+        /* Blue highlight for booked duration slots (not the start time) */
+        .bg-blue-100 {
+            background-color: #dbeafe !important;
+        }
+        .border-blue-500 {
+            border-color: #3b82f6 !important;
+        }
+        
+        /* Add visual indicator for booked slots */
+        .time-card.bg-blue-100::after {
+            content: '🔒';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 10px;
+            opacity: 0.6;
+        }
+        
+        .time-card {
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-amber-50 to-orange-100 min-h-screen">
@@ -206,9 +228,7 @@
                         <option value="13">13 Jam</option>
                         <option value="14">14 Jam</option>
                         <option value="15">15 Jam</option>
-                        <option value="16">16 Jam</option>
-                        <option value="17">17 Jam</option>
-                        <option value="18">18 Jam (Full Day)</option>
+                        <option value="16">16 Jam (Full Day)</option>
                     </select>
                 </div>
                 
@@ -338,13 +358,19 @@
             input.addEventListener('change', function() {
                 const proposedStartTime = this.value;
                 
+                // ALWAYS get current duration from dropdown (in case user changed it before selecting time)
+                const durationSelect = document.getElementById('duration');
+                selectedDuration = parseInt(durationSelect.value);
+                
+                console.log('Time selected:', proposedStartTime, 'Current duration:', selectedDuration);
+                
                 // Check if this selection would create an overlap
                 if (selectedDate && selectedDuration) {
                     checkTimeSlotBeforeSelection(proposedStartTime, selectedDuration).then(result => {
                         if (result.valid) {
                             selectedTime = proposedStartTime;
                             updateSelectedTime();
-                            calculatePrice();
+                            calculatePrice(); // This will now use the correct selectedDuration
                             updateContinueButton();
                         } else {
                             // Revert selection
@@ -376,7 +402,7 @@
                 } else {
                     selectedTime = proposedStartTime;
                     updateSelectedTime();
-                    calculatePrice();
+                    calculatePrice(); // This will now use the correct selectedDuration
                     updateContinueButton();
                 }
             });
@@ -386,6 +412,8 @@
         document.getElementById('duration').addEventListener('change', function() {
             const newDuration = parseInt(this.value);
             
+            console.log('Duration changed to:', newDuration, 'Selected time:', selectedTime);
+            
             // If there's a selected time, check if new duration creates conflict
             if (selectedTime && selectedDate) {
                 checkTimeSlotBeforeSelection(selectedTime, newDuration).then(result => {
@@ -393,7 +421,7 @@
                         selectedDuration = newDuration;
                         updateSelectedDuration();
                         updateSelectedTime();
-                        calculatePrice();
+                        calculatePrice(); // Recalculate with new duration
                         if (selectedDate) {
                             clearAvailabilityDisplay();
                             checkAvailabilityWithDebounce();
@@ -427,21 +455,17 @@
                     }
                 });
             } else {
+                // No time selected yet, just update the duration
                 selectedDuration = newDuration;
-                selectedTime = null; // Clear selected time when duration changes
                 
-                // Clear any selected time radio buttons
-                document.querySelectorAll('input[name="start_time"]').forEach(timeInput => {
-                    timeInput.checked = false;
-                });
-                
+                // Don't clear selected time if duration changed
+                // Just update availability if date is selected
                 updateSelectedDuration();
-                updateSelectedTime(); // This will show "-" since selectedTime is null
                 if (selectedDate) {
                     clearAvailabilityDisplay();
                     checkAvailabilityWithDebounce();
                 }
-                calculatePrice(); // This will clear the price display since selectedTime is null
+                // Don't call calculatePrice here since no time is selected yet
                 updateContinueButton();
             }
         });
@@ -587,6 +611,9 @@
                 
                 // Update duration selector options based on selected start time
                 updateDurationOptions();
+                
+                // Highlight all booked time slots
+                highlightBookedTimeSlots();
             } else {
                 document.getElementById('selectedTime').textContent = '-';
                 
@@ -604,8 +631,8 @@
                 const maxDuration = 24 - startHour;
                 const durationSelect = document.getElementById('duration');
                 
-                // Update duration options based on available hours
-                for (let i = 1; i <= 18; i++) {
+                // Update duration options based on available hours (max 16 for full day)
+                for (let i = 1; i <= 16; i++) {
                     const option = durationSelect.querySelector(`option[value="${i}"]`);
                     if (option) {
                         if (i <= maxDuration) {
@@ -633,6 +660,45 @@
                 durationDisplay.textContent = selectedDuration + ' jam';
             }
             updateSelectedTime(); // Update time display with new duration
+            highlightBookedTimeSlots(); // Highlight all time slots covered by duration
+        }
+
+        // Function to highlight all time slots covered by the selected duration
+        function highlightBookedTimeSlots() {
+            // First, clear all previous highlights
+            document.querySelectorAll('.time-card').forEach(card => {
+                // Only clear highlight styles, don't touch availability styles
+                card.classList.remove('bg-amber-100', 'border-amber-500', 'shadow-md', 'bg-blue-100', 'border-blue-500');
+                if (!card.previousElementSibling.disabled) {
+                    card.classList.add('bg-gray-50', 'border-gray-200');
+                }
+            });
+
+            if (!selectedTime || !selectedDuration) return;
+
+            const startHour = parseInt(selectedTime.split(':')[0]);
+            const endHour = startHour + selectedDuration;
+
+            // Highlight all time slots from start to end
+            for (let hour = startHour; hour < endHour && hour < 24; hour++) {
+                const timeStr = hour.toString().padStart(2, '0') + ':00';
+                const timeInput = document.querySelector(`input[name="start_time"][value="${timeStr}"]`);
+                
+                if (timeInput) {
+                    const timeCard = timeInput.nextElementSibling;
+                    
+                    // Different highlight for start time vs subsequent hours
+                    if (hour === startHour) {
+                        // Start time - amber/orange (primary selection)
+                        timeCard.classList.remove('bg-gray-50', 'border-gray-200', 'bg-blue-100', 'border-blue-500');
+                        timeCard.classList.add('bg-amber-100', 'border-amber-500', 'shadow-md');
+                    } else {
+                        // Subsequent hours - blue (booked by this reservation)
+                        timeCard.classList.remove('bg-gray-50', 'border-gray-200', 'bg-amber-100', 'border-amber-500');
+                        timeCard.classList.add('bg-blue-100', 'border-blue-500', 'shadow-md');
+                    }
+                }
+            }
         }
 
         // Style active selections
@@ -647,12 +713,7 @@
             }
             
             if (e.target.name === 'start_time') {
-                document.querySelectorAll('.time-card').forEach(card => {
-                    card.classList.remove('bg-amber-100', 'border-amber-500', 'shadow-md');
-                    card.classList.add('bg-gray-50', 'border-gray-200');
-                });
-                e.target.nextElementSibling.classList.remove('bg-gray-50', 'border-gray-200');
-                e.target.nextElementSibling.classList.add('bg-amber-100', 'border-amber-500', 'shadow-md');
+                highlightBookedTimeSlots();
             }
         });
 
@@ -806,22 +867,48 @@
             .then(data => {
                 console.log('Price response data:', data);
                 
+                // Check if there's an error in response
+                if (data.error) {
+                    console.error('Server error:', data.error);
+                    document.getElementById('totalPrice').textContent = 'Error';
+                    document.getElementById('priceBreakdown').innerHTML = `<div class="text-red-500 text-sm">${data.error}</div>`;
+                    return;
+                }
+                
+                // Validate response data
+                if (!data.total_price || !data.price_breakdown) {
+                    console.error('Invalid response data:', data);
+                    document.getElementById('totalPrice').textContent = 'Error';
+                    document.getElementById('priceBreakdown').innerHTML = '<div class="text-red-500 text-sm">Data tidak valid dari server</div>';
+                    return;
+                }
+                
                 // Update total price
                 document.getElementById('totalPrice').textContent = 'Rp ' + data.total_price.toLocaleString('id-ID');
                 
                 // Update price breakdown
                 let breakdownHtml = '<div class="font-semibold mb-2">Rincian Harga:</div>';
-                data.price_breakdown.forEach(item => {
-                    let colorClass = '';
-                    if (item.category === 'morning') colorClass = 'text-green-600';
-                    else if (item.category === 'afternoon') colorClass = 'text-yellow-600';
-                    else colorClass = 'text-purple-600';
-                    
-                    breakdownHtml += `<div class="flex justify-between ${colorClass}">
-                        <span>${item.hour}</span>
-                        <span>Rp ${item.price.toLocaleString('id-ID')}</span>
-                    </div>`;
-                });
+                
+                if (data.price_breakdown && data.price_breakdown.length > 0) {
+                    data.price_breakdown.forEach(item => {
+                        let colorClass = '';
+                        if (item.category === 'morning') colorClass = 'text-green-600';
+                        else if (item.category === 'afternoon') colorClass = 'text-yellow-600';
+                        else colorClass = 'text-purple-600';
+                        
+                        breakdownHtml += `<div class="flex justify-between ${colorClass}">
+                            <span>${item.hour}</span>
+                            <span>Rp ${item.price.toLocaleString('id-ID')}</span>
+                        </div>`;
+                    });
+                } else {
+                    breakdownHtml += '<div class="text-gray-500 text-sm">Tidak ada rincian harga</div>';
+                }
+                
+                // Show debug info if available
+                if (data.debug) {
+                    console.log('Debug info:', data.debug);
+                }
                 
                 document.getElementById('priceBreakdown').innerHTML = breakdownHtml;
                 
@@ -834,7 +921,7 @@
             .catch(error => {
                 console.error('Error calculating price:', error);
                 document.getElementById('totalPrice').textContent = 'Error';
-                document.getElementById('priceBreakdown').innerHTML = '<div class="text-red-500 text-sm">Error menghitung harga</div>';
+                document.getElementById('priceBreakdown').innerHTML = `<div class="text-red-500 text-sm">Error: ${error.message}</div>`;
             });
         }
 
