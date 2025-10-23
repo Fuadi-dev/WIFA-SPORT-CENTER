@@ -261,6 +261,15 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 
+                                <!-- Confirm Booking - Only for pending_confirmation -->
+                                @if($booking->status === 'pending_confirmation')
+                                    <button onclick="confirmBooking('{{ $booking->slug }}', '{{ $booking->booking_code }}')" 
+                                            class="text-green-600 hover:text-green-900 p-1 rounded" 
+                                            title="Konfirmasi Booking">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                @endif
+                                
                                 <!-- Delete - Only if booking date + time hasn't passed -->
                                 @php
                                     $bookingDate = \Carbon\Carbon::parse($booking->booking_date);
@@ -307,6 +316,36 @@
     @endif
 </div>
 
+<!-- Confirm Booking Modal -->
+<div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Konfirmasi Booking</h3>
+                <button onclick="closeConfirmModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <p class="text-gray-600 mb-6">Apakah Anda yakin ingin mengkonfirmasi booking <span id="confirmBookingCode" class="font-semibold"></span>?</p>
+            
+            <form id="confirmForm" method="POST">
+                @csrf
+                @method('PATCH')
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                        <i class="fas fa-check mr-1"></i> Konfirmasi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Confirmation Modal -->
 <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -340,6 +379,16 @@
 
 @push('scripts')
 <script>
+    function confirmBooking(bookingSlug, bookingCode) {
+        document.getElementById('confirmModal').classList.remove('hidden');
+        document.getElementById('confirmForm').action = `/admin/bookings/${bookingSlug}/confirm`;
+        document.getElementById('confirmBookingCode').textContent = bookingCode;
+    }
+    
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.add('hidden');
+    }
+    
     function confirmDelete(bookingSlug, bookingCode) {
         document.getElementById('deleteModal').classList.remove('hidden');
         document.getElementById('deleteForm').action = `/admin/bookings/${bookingSlug}`;
@@ -350,7 +399,13 @@
         document.getElementById('deleteModal').classList.add('hidden');
     }
     
-    // Close modal when clicking outside
+    // Close modals when clicking outside
+    document.getElementById('confirmModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeConfirmModal();
+        }
+    });
+    
     document.getElementById('deleteModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeDeleteModal();

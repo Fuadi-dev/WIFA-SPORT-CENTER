@@ -45,6 +45,10 @@ class Event extends Model
         'registration_fee' => 'decimal:2',
     ];
 
+    protected $dates = [
+        'deleted_at'
+    ];
+
     /**
      * Boot the model and set up event code generation
      */

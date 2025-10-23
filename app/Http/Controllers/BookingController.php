@@ -529,13 +529,13 @@ class BookingController extends Controller
         $totalPrice = $originalPrice - $discountAmount;
 
         // Determine initial status based on payment method
-        $initialStatus = $request->payment_method === 'cash' ? 'confirmed' : 'pending_payment';
+        $initialStatus = $request->payment_method === 'cash' ? 'pending_confirmation' : 'pending_payment';
         $confirmedAt = $request->payment_method === 'cash' ? now() : null;
         $bookingCode = Str::random(10);
 
         // Create booking
         $booking = Booking::create([
-            'booking_code' => $bookingCode,
+            'booking_code' => 'WIFA-' . $bookingCode,
             'user_id' => Auth::id(),
             'sport_id' => $request->sport_id,
             'court_id' => $request->court_id,

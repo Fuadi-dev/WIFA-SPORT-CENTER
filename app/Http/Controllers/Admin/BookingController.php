@@ -10,6 +10,7 @@ use App\Models\Court;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class BookingController extends Controller
 {
@@ -116,6 +117,22 @@ class BookingController extends Controller
             ->with('success', "Booking {$bookingCode} berhasil dihapus");
     }
 
+    public function confirmBooking(Booking $booking)
+    {
+        // Check if booking is in pending_confirmation status
+        if ($booking->status !== 'pending_confirmation') {
+            return redirect()->back()->with('error', 'Hanya booking dengan status pending confirmation yang dapat dikonfirmasi');
+        }
+        
+        $oldStatus = $booking->status;
+        $booking->status = 'confirmed';
+        $booking->confirmed_at = now();
+        $booking->save();
+        
+        return redirect()->route('admin.bookings.index')
+            ->with('success', "Booking {$booking->booking_code} berhasil dikonfirmasi!");
+    }
+
     public function updateStatus(Request $request, Booking $booking)
     {
         $request->validate([
@@ -189,11 +206,11 @@ class BookingController extends Controller
             $totalPrice = $pricePerHour * $duration;
 
             // Generate unique booking code
-            $bookingCode = 'BK-' . date('Ymd') . '-' . str_pad(Booking::whereDate('created_at', today())->count() + 1, 3, '0', STR_PAD_LEFT);
+            $bookingCode = Str::random(10);
 
             // Create booking
             $booking = Booking::create([
-                'booking_code' => $bookingCode,
+                'booking_code' => 'WIFA-' . $bookingCode,
                 'user_id' => $user->id,
                 'sport_id' => $request->sport_id,
                 'court_id' => $request->court_id,

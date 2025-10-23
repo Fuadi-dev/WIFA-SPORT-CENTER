@@ -30,6 +30,10 @@ class User extends Authenticatable
         'phone_number',
     ];
 
+    protected $dates = [
+        'deleted_at'
+    ];
+
     /**
      * The attributes that should be hidden for serialization.
      *

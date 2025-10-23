@@ -102,10 +102,12 @@
                                 <i class="fas 
                                     @if($booking->status === 'confirmed') fa-check-circle
                                     @elseif($booking->status === 'pending_payment') fa-clock
+                                    @elseif($booking->status === 'pending_confirmation') fa-clock
                                     @elseif($booking->status === 'paid') fa-credit-card
                                     @else fa-question-circle @endif mr-1"></i>
                                 @if($booking->status === 'confirmed') Dikonfirmasi
                                 @elseif($booking->status === 'pending_payment') Menunggu Pembayaran
+                                @elseif($booking->status === 'pending_confirmation') Menunggu Konfirmasi
                                 @elseif($booking->status === 'paid') Sudah Dibayar
                                 @else {{ ucfirst($booking->status) }} @endif
                             </span>

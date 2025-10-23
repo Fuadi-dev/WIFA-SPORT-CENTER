@@ -177,6 +177,7 @@
                         </div>
                         <div>
                             <p class="font-semibold text-gray-800">{{ $sport->name }}</p>
+                            {{-- tampilkan total data booking kecuali soft deleted --}}
                             <p class="text-gray-600 text-sm">{{ $sport->booking_count }} booking</p>
                         </div>
                     </div>

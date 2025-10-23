@@ -71,20 +71,22 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
         
-        // Most popular sports
+        // Most popular sports (exclude soft deleted bookings)
         $popularSports = DB::table('bookings')
             ->join('sports', 'bookings.sport_id', '=', 'sports.id')
             ->select('sports.name', DB::raw('COUNT(*) as booking_count'))
+            ->whereNull('bookings.deleted_at')
             ->groupBy('sports.id', 'sports.name')
             ->orderBy('booking_count', 'desc')
             ->limit(5)
             ->get();
         
-        // Court utilization
+        // Court utilization (exclude soft deleted bookings)
         $courtUtilization = DB::table('bookings')
             ->join('courts', 'bookings.court_id', '=', 'courts.id')
             ->select('courts.name', DB::raw('COUNT(*) as booking_count'))
             ->where('bookings.status', '!=', 'cancelled')
+            ->whereNull('bookings.deleted_at')
             ->groupBy('courts.id', 'courts.name')
             ->orderBy('booking_count', 'desc')
             ->get();

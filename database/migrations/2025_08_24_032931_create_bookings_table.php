@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->string('booking_code')->unique(); // WIFA-001, WIFA-002, etc
+            $table->string('booking_code')->unique(); 
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('sport_id')->constrained('sports')->onDelete('cascade');
             $table->foreignId('court_id')->constrained('courts')->onDelete('cascade');
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->enum('payment_method', ['cash', 'midtrans']);
             $table->decimal('total_price', 10, 2);
-            $table->enum('status', ['pending_payment', 'confirmed', 'paid', 'cancelled', 'completed'])->default('pending_payment');
+            $table->enum('status', ['pending_payment', 'pending_confirmation', 'confirmed', 'paid', 'cancelled', 'completed'])->default('pending_payment');
             $table->string('midtrans_snap_token')->nullable(); // For Midtrans integration
             $table->string('midtrans_order_id')->nullable(); // Midtrans order ID
             $table->timestamp('confirmed_at')->nullable();

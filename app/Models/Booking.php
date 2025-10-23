@@ -46,6 +46,10 @@ class Booking extends Model
         'paid_at' => 'datetime'
     ];
 
+    protected $dates = [
+        'deleted_at'
+    ];
+
     protected static function boot()
     {
         parent::boot();
