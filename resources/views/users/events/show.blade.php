@@ -14,7 +14,7 @@
 
     <div class="container mx-auto px-4 pt-32 pb-16">
         <!-- Breadcrumb -->
-        <nav class="text-sm text-gray-600 mb-8">
+        <nav class="hidden sm:block text-sm text-gray-600 mb-8">
             <ol class="list-none p-0 inline-flex">
                 <li class="flex items-center">
                     <a href="{{ route('home') }}" class="hover:text-amber-600">Home</a>
@@ -28,11 +28,11 @@
             </ol>
         </nav>
 
-        <div class="grid lg:grid-cols-12 gap-8">
+        <div class="grid lg:grid-cols-12 gap-6 sm:gap-8">
             <!-- Poster Display -->
             <div class="lg:col-span-5">
                 <!-- Event Poster Card - Large Format -->
-                <div class="bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-white hover:border-amber-200 transition-all duration-300 mb-8 sticky top-24 poster-card">
+                <div class="bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-white hover:border-amber-200 transition-all duration-300 mb-6 sm:mb-8 sm:sticky sm:top-24 poster-card">
                     <!-- Poster Container - A3/A4 Portrait Ratio -->
                     <div class="relative poster-large bg-gradient-to-br from-amber-400 via-orange-500 to-red-500">
                         @if($event->poster)
@@ -149,20 +149,20 @@
             <!-- Main Content -->
             <div class="lg:col-span-7">
                 <!-- Event Information Card -->
-                <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-amber-100 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 border-2 border-amber-100 mb-6 sm:mb-8">
                     <!-- Title & Sport -->
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                        <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4 md:mb-0">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 sm:mb-6">
+                        <h1 class="text-xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 md:mb-0">
                             {{ $event->title }}
                         </h1>
-                        <span class="inline-flex items-center bg-amber-100 text-amber-800 text-lg font-semibold px-4 py-2 rounded-full">
+                        <span class="inline-flex items-center bg-amber-100 text-amber-800 text-sm sm:text-lg font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
                             <i class="{{ $event->sport->icon }} mr-2"></i>
                             {{ $event->sport->name }}
                         </span>
                     </div>
 
                     <!-- Event Description -->
-                    <div class="prose max-w-none text-gray-700 mb-6">
+                    <div class="prose max-w-none text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
                         {!! nl2br(e($event->description)) !!}
                     </div>
 
@@ -274,12 +274,12 @@
                 @endauth
 
                 <!-- Action Buttons -->
-                <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-amber-100 mb-8">
-                    <h3 class="text-xl font-bold text-gray-800 mb-6">
+                <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-2 border-amber-100 mb-6 sm:mb-8">
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-4 sm:mb-6">
                         <i class="fas fa-bolt mr-2 text-amber-600"></i>Aksi
                     </h3>
                     
-                    <div class="grid md:grid-cols-2 gap-4">
+                    <div class="grid md:grid-cols-2 gap-3 sm:gap-4">
                         <!-- Registration Button -->
                         <div>
                             @auth
@@ -345,15 +345,15 @@
                 </div>
 
                 <!-- Contact Info -->
-                <div class="bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl shadow-lg p-6 text-white">
-                    <h3 class="text-lg font-bold mb-4">
+                <div class="bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+                    <h3 class="text-base sm:text-lg font-bold mb-3 sm:mb-4">
                         <i class="fas fa-phone mr-2"></i>Butuh Bantuan?
                     </h3>
-                    <p class="text-sm mb-4 opacity-90">
+                    <p class="text-xs sm:text-sm mb-3 sm:mb-4 opacity-90">
                         Hubungi admin WIFA Sport Center untuk informasi lebih lanjut tentang event ini.
                     </p>
                     <a href="https://wa.me/6285741182762" target="_blank"
-                       class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-300 shadow-lg text-sm">
+                       class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-300 shadow-lg text-xs sm:text-sm">
                         <i class="fab fa-whatsapp mr-2"></i>
                         WhatsApp Admin
                     </a>
@@ -416,7 +416,13 @@
         /* Responsive poster scaling */
         @media (max-width: 768px) {
             .poster-large {
-                min-height: 400px;
+                min-height: 350px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .poster-large {
+                min-height: 300px;
             }
         }
     </style>

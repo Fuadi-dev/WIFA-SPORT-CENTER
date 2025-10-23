@@ -14,7 +14,7 @@
 
     <div class="container mx-auto px-4 pt-32 pb-16">
         <!-- Breadcrumb -->
-        <nav class="text-sm text-gray-600 mb-8">
+        <nav class="hidden sm:block text-sm text-gray-600 mb-8">
             <ol class="list-none p-0 inline-flex">
                 <li class="flex items-center">
                     <a href="{{ route('home') }}" class="hover:text-amber-600">Home</a>
@@ -25,14 +25,14 @@
         </nav>
 
         <!-- Header -->
-        <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold text-amber-800 mb-4">
-                <i class="fas fa-images mr-3"></i>Gallery Event & Turnamen
+        <div class="text-center mb-8 sm:mb-12">
+            <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold text-amber-800 mb-3 sm:mb-4">
+                <i class="fas fa-images mr-2 sm:mr-3"></i>Gallery Event
             </h1>
-            <p class="text-xl text-gray-700 max-w-3xl mx-auto mb-6">
+            <p class="text-base sm:text-xl text-gray-700 max-w-3xl mx-auto mb-4 sm:mb-6 px-4">
                 Koleksi poster event dan turnamen olahraga terbaru di WIFA Sport Center
             </p>
-            <div class="flex items-center justify-center space-x-6 text-sm text-gray-600">
+            <div class="hidden sm:flex items-center justify-center space-x-6 text-sm text-gray-600">
                 <div class="flex items-center">
                     <i class="fas fa-image mr-2 text-amber-600"></i>
                     <span>Format Poster Professional</span>
@@ -49,20 +49,20 @@
         </div>
 
         <!-- Filters -->
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border-2 border-amber-100">
-            <form method="GET" action="{{ route('events.index') }}" class="space-y-4 md:space-y-0 md:flex md:items-end md:space-x-4">
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-amber-100">
+            <form method="GET" action="{{ route('events.index') }}" class="space-y-3 sm:space-y-4 md:space-y-0 md:flex md:items-end md:space-x-4">
                 <!-- Search -->
                 <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Cari Event</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Cari Event</label>
                     <input type="text" name="search" value="{{ request('search') }}" 
-                           placeholder="Nama event atau turnamen..." 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                           placeholder="Nama event..." 
+                           class="w-full px-3 sm:px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                 </div>
                 
                 <!-- Sport Filter -->
                 <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Olahraga</label>
-                    <select name="sport_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Olahraga</label>
+                    <select name="sport_id" class="w-full px-3 sm:px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                         <option value="">Semua Olahraga</option>
                         @foreach($sports as $sport)
                             <option value="{{ $sport->id }}" {{ request('sport_id') == $sport->id ? 'selected' : '' }}>
@@ -74,11 +74,11 @@
                 
                 <!-- Action Buttons -->
                 <div class="flex space-x-2">
-                    <button type="submit" class="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
-                        <i class="fas fa-search mr-2"></i>Filter
+                    <button type="submit" class="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i><span class="hidden sm:inline">Filter</span><span class="sm:hidden">Cari</span>
                     </button>
-                    <a href="{{ route('events.index') }}" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
-                        <i class="fas fa-times mr-2"></i>Reset
+                    <a href="{{ route('events.index') }}" class="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-center">
+                        <i class="fas fa-times mr-2"></i><span class="hidden sm:inline">Reset</span><span class="sm:hidden">Clear</span>
                     </a>
                 </div>
             </form>
@@ -236,18 +236,18 @@
             </div>
         @else
             <!-- No Events -->
-            <div class="text-center py-16">
-                <div class="bg-white rounded-xl shadow-lg p-12 max-w-md mx-auto border-2 border-amber-100">
-                    <div class="poster-medium bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg mb-6 mx-auto max-w-xs flex items-center justify-center">
-                        <i class="fas fa-images text-gray-400 text-6xl"></i>
+            <div class="text-center py-12 sm:py-16">
+                <div class="bg-white rounded-xl shadow-lg p-8 sm:p-12 max-w-md mx-auto border-2 border-amber-100">
+                    <div class="poster-medium bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg mb-4 sm:mb-6 mx-auto max-w-xs flex items-center justify-center">
+                        <i class="fas fa-images text-gray-400 text-4xl sm:text-6xl"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Gallery Kosong</h3>
-                    <p class="text-gray-600 mb-6">
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Gallery Kosong</h3>
+                    <p class="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
                         Belum ada poster event atau turnamen yang tersedia saat ini. 
                         Silakan periksa kembali nanti!
                     </p>
                     <a href="{{ route('booking.index') }}" 
-                       class="inline-flex items-center bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300">
+                       class="inline-flex items-center bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all duration-300 text-sm sm:text-base">
                         <i class="fas fa-calendar-plus mr-2"></i>
                         Booking Lapangan
                     </a>
@@ -256,34 +256,35 @@
         @endif
 
         <!-- Call to Action -->
-        <div class="mt-16 bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl shadow-lg p-8 text-center text-white relative overflow-hidden">
+        <div class="mt-12 sm:mt-16 bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl shadow-lg p-6 sm:p-8 text-center text-white relative overflow-hidden">
             <!-- Background Pattern -->
             <div class="absolute inset-0 opacity-10">
                 <div class="w-full h-full bg-repeat floating-pattern" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"80\" height=\"80\" viewBox=\"0 0 80 80\"><rect x=\"10\" y=\"10\" width=\"20\" height=\"28\" fill=\"white\" opacity=\"0.3\" rx=\"2\"/><rect x=\"50\" y=\"25\" width=\"15\" height=\"21\" fill=\"white\" opacity=\"0.2\" rx=\"1\"/></svg>')"></div>
             </div>
             
             <div class="relative z-10">
-                <h2 class="text-2xl md:text-3xl font-bold mb-4">
-                    <i class="fas fa-palette mr-3"></i>Ingin Membuat Poster Event?
+                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4">
+                    <i class="fas fa-palette mr-2 sm:mr-3"></i>Ingin Membuat Poster Event?
                 </h2>
-                <p class="text-lg mb-6 opacity-90">
+                <p class="text-sm sm:text-lg mb-4 sm:mb-6 opacity-90">
                     Hubungi kami untuk konsultasi desain poster dan penyelenggaraan event di WIFA Sport Center
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
                     <a href="https://wa.me/6285741182762" target="_blank"
-                       class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-lg">
+                       class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all duration-300 shadow-lg text-sm sm:text-base">
                         <i class="fab fa-whatsapp mr-2"></i>
                         Konsultasi Gratis
                     </a>
-                    <span class="text-sm opacity-75">atau</span>
-                    <span class="font-semibold">
+                    <span class="text-xs sm:text-sm opacity-75">atau</span>
+                    <span class="font-semibold text-sm sm:text-base">
                         <i class="fas fa-phone mr-2"></i>
                         +62 857 4118 2762
                     </span>
                 </div>
-                <div class="mt-4 text-sm opacity-80">
+                <div class="mt-3 sm:mt-4 text-xs sm:text-sm opacity-80">
                     <i class="fas fa-star mr-1"></i>
-                    Desain poster professional • Format A3/A4 • Siap cetak
+                    <span class="hidden sm:inline">Desain poster professional • Format A3/A4 • Siap cetak</span>
+                    <span class="sm:hidden">Poster professional • A3/A4</span>
                 </div>
             </div>
         </div>
@@ -390,28 +391,28 @@
         /* Gallery responsive breakpoints */
         .poster-gallery {
             display: grid;
-            gap: 1.5rem;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         }
         
         @media (min-width: 640px) {
             .poster-gallery {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 2rem;
+                gap: 1.5rem;
             }
         }
         
         @media (min-width: 1024px) {
             .poster-gallery {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 2.5rem;
+                gap: 2rem;
             }
         }
         
         @media (min-width: 1280px) {
             .poster-gallery {
                 grid-template-columns: repeat(4, 1fr);
-                gap: 3rem;
+                gap: 2.5rem;
             }
         }
     </style>

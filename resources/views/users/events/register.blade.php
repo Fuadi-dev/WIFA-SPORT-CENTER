@@ -14,7 +14,7 @@
 
     <div class="container mx-auto px-4 pt-32 pb-16">
         <!-- Breadcrumb -->
-        <nav class="text-sm text-gray-600 mb-8">
+        <nav class="hidden sm:block text-sm text-gray-600 mb-8">
             <ol class="list-none p-0 inline-flex">
                 <li class="flex items-center">
                     <a href="{{ route('home') }}" class="hover:text-amber-600">Home</a>
@@ -34,50 +34,50 @@
 
         <div class="max-w-4xl mx-auto">
             <!-- Header -->
-            <div class="text-center mb-8">
-                <h1 class="text-3xl md:text-4xl font-bold text-amber-800 mb-4">
-                    <i class="fas fa-user-plus mr-3"></i>Pendaftaran Event
+            <div class="text-center mb-6 sm:mb-8">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-amber-800 mb-3 sm:mb-4">
+                    <i class="fas fa-user-plus mr-2 sm:mr-3"></i>Pendaftaran Event
                 </h1>
-                <p class="text-xl text-gray-700">
+                <p class="text-base sm:text-xl text-gray-700 px-4">
                     {{ $event->title }}
                 </p>
             </div>
 
             <!-- Event Summary -->
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border-2 border-amber-100">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-amber-100">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
                     <i class="fas fa-info-circle mr-2 text-amber-600"></i>Ringkasan Event
                 </h2>
                 
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="space-y-3">
-                        <div class="flex items-center">
-                            <i class="fas fa-calendar-alt w-5 text-amber-600 mr-3"></i>
+                <div class="grid md:grid-cols-2 gap-4 sm:gap-6">
+                    <div class="space-y-2 sm:space-y-3">
+                        <div class="flex items-center text-sm sm:text-base">
+                            <i class="fas fa-calendar-alt w-4 sm:w-5 text-amber-600 mr-2 sm:mr-3"></i>
                             <span class="font-semibold text-gray-700">Tanggal:</span>
                             <span class="ml-2 text-gray-600">{{ \Carbon\Carbon::parse($event->event_date)->format('d F Y') }}</span>
                         </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-clock w-5 text-amber-600 mr-3"></i>
+                        <div class="flex items-center text-sm sm:text-base">
+                            <i class="fas fa-clock w-4 sm:w-5 text-amber-600 mr-2 sm:mr-3"></i>
                             <span class="font-semibold text-gray-700">Waktu:</span>
                             <span class="ml-2 text-gray-600">
                                 {{ \Carbon\Carbon::parse($event->start_time)->format('H:i') }} - 
                                 {{ \Carbon\Carbon::parse($event->end_time)->format('H:i') }}
                             </span>
                         </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-map-marker-alt w-5 text-amber-600 mr-3"></i>
+                        <div class="flex items-center text-sm sm:text-base">
+                            <i class="fas fa-map-marker-alt w-4 sm:w-5 text-amber-600 mr-2 sm:mr-3"></i>
                             <span class="font-semibold text-gray-700">Tempat:</span>
                             <span class="ml-2 text-gray-600">{{ $event->court->name }}</span>
                         </div>
                     </div>
-                    <div class="space-y-3">
-                        <div class="flex items-center">
-                            <i class="{{ $event->sport->icon }} w-5 text-amber-600 mr-3"></i>
+                    <div class="space-y-2 sm:space-y-3">
+                        <div class="flex items-center text-sm sm:text-base">
+                            <i class="{{ $event->sport->icon }} w-4 sm:w-5 text-amber-600 mr-2 sm:mr-3"></i>
                             <span class="font-semibold text-gray-700">Olahraga:</span>
                             <span class="ml-2 text-gray-600">{{ $event->sport->name }}</span>
                         </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-money-bill w-5 text-amber-600 mr-3"></i>
+                        <div class="flex items-center text-sm sm:text-base">
+                            <i class="fas fa-money-bill w-4 sm:w-5 text-amber-600 mr-2 sm:mr-3"></i>
                             <span class="font-semibold text-gray-700">Biaya:</span>
                             <span class="ml-2 text-gray-600">
                                 @if($event->registration_fee > 0)
@@ -87,8 +87,8 @@
                                 @endif
                             </span>
                         </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-hourglass-end w-5 text-amber-600 mr-3"></i>
+                        <div class="flex items-center text-sm sm:text-base">
+                            <i class="fas fa-hourglass-end w-4 sm:w-5 text-amber-600 mr-2 sm:mr-3"></i>
                             <span class="font-semibold text-gray-700">Batas:</span>
                             <span class="ml-2 text-gray-600">{{ \Carbon\Carbon::parse($event->registration_deadline)->format('d F Y') }}</span>
                         </div>
@@ -97,8 +97,8 @@
             </div>
 
             <!-- Registration Form -->
-            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-amber-100">
-                <h2 class="text-xl font-bold text-gray-800 mb-6">
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 border-2 border-amber-100">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4 sm:mb-6">
                     <i class="fas fa-edit mr-2 text-amber-600"></i>Formulir Pendaftaran
                 </h2>
 
@@ -106,27 +106,27 @@
                     @csrf
                     
                     <!-- Team Information -->
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                    <div class="mb-6 sm:mb-8">
+                        <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 border-b border-gray-200 pb-2">
                             <i class="fas fa-users mr-2 text-amber-600"></i>Informasi Tim
                         </h3>
                         
-                        <div class="grid md:grid-cols-1 gap-6">
+                        <div class="grid md:grid-cols-1 gap-4 sm:gap-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nama Tim *</label>
+                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Nama Tim *</label>
                                 <input type="text" name="team_name" value="{{ old('team_name') }}" required
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('team_name') border-red-500 @enderror"
+                                       class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('team_name') border-red-500 @enderror"
                                        placeholder="Masukkan nama tim Anda">
                                 @error('team_name')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-500 text-xs sm:text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                         </div>
                     </div>
 
                     <!-- Team Members -->
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                    <div class="mb-6 sm:mb-8">
+                        <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 border-b border-gray-200 pb-2">
                             <i class="fas fa-user-friends mr-2 text-amber-600"></i>Anggota Tim
                         </h3>
                         
@@ -156,25 +156,25 @@
                         </div>
                         
                         <button type="button" id="add-member" 
-                                class="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors">
+                                class="inline-flex items-center px-3 sm:px-4 py-2 text-sm sm:text-base bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors">
                             <i class="fas fa-plus mr-2"></i>Tambah Anggota
                         </button>
                     </div>
 
                     <!-- Contact Information -->
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                    <div class="mb-6 sm:mb-8">
+                        <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 border-b border-gray-200 pb-2">
                             <i class="fas fa-address-book mr-2 text-amber-600"></i>Informasi Kontak
                         </h3>
                         
-                        <div class="grid md:grid-cols-1 gap-6">
+                        <div class="grid md:grid-cols-1 gap-4 sm:gap-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Penanggung Jawab *</label>
+                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Penanggung Jawab *</label>
                                 <input type="text" name="contact_person" value="{{ old('contact_person', auth()->user()->name) }}" required
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('contact_person') border-red-500 @enderror"
+                                       class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('contact_person') border-red-500 @enderror"
                                        placeholder="Nama penanggung jawab">
                                 @error('contact_person')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-500 text-xs sm:text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             
@@ -210,11 +210,11 @@
                     </div>
 
                     <!-- Terms -->
-                    <div class="mb-8">
+                    <div class="mb-6 sm:mb-8">
                         <div class="flex items-start">
                             <input type="checkbox" id="agree_terms" name="agree_terms" required
                                    class="mt-1 h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded">
-                            <label for="agree_terms" class="ml-3 text-sm text-gray-700">
+                            <label for="agree_terms" class="ml-3 text-xs sm:text-sm text-gray-700">
                                 Saya menyetujui <span class="text-amber-600 font-semibold">syarat dan ketentuan</span> 
                                 yang berlaku untuk event ini dan bersedia mengikuti semua aturan yang ditetapkan.
                             </label>
@@ -222,14 +222,14 @@
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                    <div class="flex flex-col sm:flex-row justify-between items-center pt-4 sm:pt-6 border-t border-gray-200 gap-3">
                         <a href="{{ route('events.show', $event) }}" 
-                           class="inline-flex items-center px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors">
+                           class="w-full sm:w-auto inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors">
                             <i class="fas fa-arrow-left mr-2"></i>Kembali
                         </a>
                         
                         <button type="submit"
-                                class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105">
+                                class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105">
                             <i class="fas fa-paper-plane mr-2"></i>Daftar Event
                         </button>
                     </div>
