@@ -84,8 +84,8 @@
     @include('components.navbar')
 
     <div class="container mx-auto px-4 pt-32 pb-16">
-        <!-- Breadcrumb -->
-        <nav class="text-sm text-gray-600 mb-8">
+        <!-- Breadcrumb - Hide on mobile -->
+        <nav class="text-xs sm:text-sm text-gray-600 mb-6 sm:mb-8 hidden sm:block">
             <ol class="list-none p-0 inline-flex">
                 <li class="flex items-center">
                     <a href="{{ route('home') }}" class="hover:text-amber-600">Home</a>
@@ -100,14 +100,14 @@
         </nav>
 
         <!-- Header -->
-        <div class="text-center mb-12">
-            <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                <i class="{{ $sport->icon }} text-3xl text-white"></i>
+        <div class="text-center mb-8 sm:mb-12">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                <i class="{{ $sport->icon }} text-2xl sm:text-3xl text-white"></i>
             </div>
-            <h1 class="text-4xl md:text-5xl font-bold text-amber-800 mb-4">
+            <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold text-amber-800 mb-3 sm:mb-4">
                 Pilih Jadwal Booking
             </h1>
-                        <p class="text-xl text-gray-700 max-w-2xl mx-auto">
+                        <p class="text-base sm:text-xl text-gray-700 max-w-2xl mx-auto px-4">
                 {{ $sport->name }} - {{ $court->name }}
                 @if($court->physical_location)
                     @php
@@ -117,50 +117,41 @@
                     @endif
                 @endif
             </p>
-            <div class="mt-2 text-sm text-gray-600 max-w-2xl mx-auto">
-                <p><strong>Weekend:</strong> Jumat, Sabtu, Minggu | <strong>Weekday:</strong> Senin - Kamis</p>
+            <div class="mt-2 text-xs sm:text-sm text-gray-600 max-w-2xl mx-auto px-4">
+                <p><strong>Weekend:</strong> Jum, Sab, Ming | <strong>Weekday:</strong> Sen - Kam</p>
             </div>
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-                <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-center">
-                    <i class="fas fa-sun mr-2"></i>
-                    <div class="font-semibold">08:00 - 12:00</div>
+            <div class="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto px-2 sm:px-0">
+                <div class="bg-green-100 text-green-800 px-3 sm:px-4 py-2 rounded-lg text-center">
+                    <i class="fas fa-sun mr-1 sm:mr-2 text-xs sm:text-base"></i>
+                    <div class="font-semibold text-sm sm:text-base">08:00 - 12:00</div>
                     @if($sport->name === 'Futsal')
-                        <div class="text-sm">Weekday: Rp 60.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 65.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 60k | WE: Rp 65k</div>
                     @elseif($sport->name === 'Badminton')
-                        <div class="text-sm">Weekday: Rp 30.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 35.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 30k | WE: Rp 35k</div>
                     @elseif(in_array($sport->name, ['Voli', 'Volleyball']))
-                        <div class="text-sm">Weekday: Rp 50.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 55.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 50k | WE: Rp 55k</div>
                     @endif
                 </div>
-                <div class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-center">
-                    <i class="fas fa-cloud-sun mr-2"></i>
-                    <div class="font-semibold">12:00 - 18:00</div>
+                <div class="bg-yellow-100 text-yellow-800 px-3 sm:px-4 py-2 rounded-lg text-center">
+                    <i class="fas fa-cloud-sun mr-1 sm:mr-2 text-xs sm:text-base"></i>
+                    <div class="font-semibold text-sm sm:text-base">12:00 - 18:00</div>
                     @if($sport->name === 'Futsal')
-                        <div class="text-sm">Weekday: Rp 80.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 85.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 80k | WE: Rp 85k</div>
                     @elseif($sport->name === 'Badminton')
-                        <div class="text-sm">Weekday: Rp 35.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 40.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 35k | WE: Rp 40k</div>
                     @elseif(in_array($sport->name, ['Voli', 'Volleyball']))
-                        <div class="text-sm">Weekday: Rp 60.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 65.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 60k | WE: Rp 65k</div>
                     @endif
                 </div>
-                <div class="bg-purple-100 text-purple-800 px-4 py-2 rounded-lg text-center">
-                    <i class="fas fa-moon mr-2"></i>
-                    <div class="font-semibold">18:00 - 24:00</div>
+                <div class="bg-purple-100 text-purple-800 px-3 sm:px-4 py-2 rounded-lg text-center">
+                    <i class="fas fa-moon mr-1 sm:mr-2 text-xs sm:text-base"></i>
+                    <div class="font-semibold text-sm sm:text-base">18:00 - 24:00</div>
                     @if($sport->name === 'Futsal')
-                        <div class="text-sm">Weekday: Rp 100.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 105.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 100k | WE: Rp 105k</div>
                     @elseif($sport->name === 'Badminton')
-                        <div class="text-sm">Weekday: Rp 40.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 45.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 40k | WE: Rp 45k</div>
                     @elseif(in_array($sport->name, ['Voli', 'Volleyball']))
-                        <div class="text-sm">Weekday: Rp 70.000/jam</div>
-                        <div class="text-sm">Weekend: Rp 75.000/jam</div>
+                        <div class="text-xs sm:text-sm">WD: Rp 70k | WE: Rp 75k</div>
                     @endif
                 </div>
             </div>
@@ -172,21 +163,21 @@
             <input type="hidden" name="court_id" value="{{ $court->id }}">
             
             <!-- Date Selection -->
-            <div class="bg-white rounded-xl shadow-lg p-8 mb-8 border-2 border-amber-100">
-                <h2 class="text-2xl font-bold text-amber-800 mb-6">
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border-2 border-amber-100">
+                <h2 class="text-xl sm:text-2xl font-bold text-amber-800 mb-4 sm:mb-6">
                     <i class="fas fa-calendar-alt mr-2"></i>Pilih Tanggal
-                    <span class="text-sm font-normal text-gray-600 ml-2">(Geser untuk melihat tanggal lainnya)</span>
+                    <span class="block sm:inline text-xs sm:text-sm font-normal text-gray-600 mt-1 sm:mt-0 sm:ml-2">(Geser untuk lihat tanggal lain)</span>
                 </h2>
                 
                 <div class="overflow-x-auto date-scroll">
-                    <div class="flex gap-4 pb-4" style="min-width: max-content;">
+                    <div class="flex gap-3 sm:gap-4 pb-4" style="min-width: max-content;">
                         @foreach($dates as $date)
                         <label class="date-option cursor-pointer flex-shrink-0">
                             <input type="radio" name="date" value="{{ $date->format('Y-m-d') }}" class="hidden" required>
-                            <div class="date-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-4 text-center transition-all duration-300 w-20">
+                            <div class="date-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-3 sm:p-4 text-center transition-all duration-300 w-16 sm:w-20">
                                 <div class="font-semibold text-gray-700 text-xs">{{ $date->locale('id')->isoFormat('ddd') }}</div>
-                                <div class="text-2xl font-bold text-amber-600">{{ $date->format('d') }}</div>
-                                <div class="text-sm text-gray-600">{{ $date->locale('id')->isoFormat('MMM') }}</div>
+                                <div class="text-xl sm:text-2xl font-bold text-amber-600">{{ $date->format('d') }}</div>
+                                <div class="text-xs sm:text-sm text-gray-600">{{ $date->locale('id')->isoFormat('MMM') }}</div>
                                 @if($date->isToday())
                                     <div class="text-xs text-amber-600 font-semibold mt-1">Hari Ini</div>
                                 @endif
@@ -194,8 +185,8 @@
                         </label>
                         @endforeach
                     </div>
-                    <!-- Scroll indicator -->
-                    <div class="text-center mt-2">
+                    <!-- Scroll indicator - Hide on mobile -->
+                    <div class="text-center mt-2 hidden sm:block">
                         <i class="fas fa-chevron-left scroll-hint text-amber-500 text-xs"></i>
                         <span class="text-xs text-gray-500 mx-2">Geser untuk melihat tanggal lainnya</span>
                         <i class="fas fa-chevron-right scroll-hint text-amber-500 text-xs"></i>
@@ -204,15 +195,15 @@
             </div>
 
             <!-- Time Selection -->
-            <div class="bg-white rounded-xl shadow-lg p-8 mb-8 border-2 border-amber-100">
-                <h2 class="text-2xl font-bold text-amber-800 mb-6">
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border-2 border-amber-100">
+                <h2 class="text-xl sm:text-2xl font-bold text-amber-800 mb-4 sm:mb-6">
                     <i class="fas fa-clock mr-2"></i>Pilih Waktu
                 </h2>
                 
                 <!-- Time Duration Selector -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Durasi Booking</label>
-                    <select id="duration" class="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <div class="mb-4 sm:mb-6">
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Durasi Booking</label>
+                    <select id="duration" class="w-full sm:max-w-xs px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm sm:text-base">
                         <option value="1">1 Jam</option>
                         <option value="2">2 Jam</option>
                         <option value="3">3 Jam</option>
@@ -233,7 +224,7 @@
                 </div>
                 
                 <!-- Time Slots Grid -->
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="timeSlots">
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3" id="timeSlots">
                     @foreach($timeSlots as $slot)
                     <label class="time-slot cursor-pointer">
                         <input type="radio" 
@@ -244,16 +235,16 @@
                                data-weekend-price="{{ $slot['weekend_price'] }}"
                                data-category="{{ $slot['price_category'] }}" 
                                class="hidden" required>
-                        <div class="time-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-3 text-center transition-all duration-300">
-                            <div class="font-semibold text-gray-700">{{ $slot['display'] }}</div>
+                        <div class="time-card bg-gray-50 hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300 rounded-lg p-2 sm:p-3 text-center transition-all duration-300">
+                            <div class="font-semibold text-gray-700 text-xs sm:text-sm">{{ $slot['display'] }}</div>
                             <div class="text-xs mt-1 
                                 @if($slot['price_category'] == 'morning') text-green-600
                                 @elseif($slot['price_category'] == 'afternoon') text-yellow-600
                                 @else text-purple-600 @endif">
-                                Rp {{ number_format($slot['price'], 0, ',', '.') }}
+                                <span class="hidden sm:inline">Rp </span>{{ number_format($slot['price']/1000, 0) }}k
                             </div>
                             <div class="availability-status text-xs mt-1 text-gray-500">
-                                <i class="fas fa-check-circle mr-1"></i>Tersedia
+                                <i class="fas fa-check-circle mr-1"></i><span class="hidden sm:inline">Tersedia</span>
                             </div>
                         </div>
                     </label>
@@ -262,27 +253,27 @@
             </div>
 
             <!-- Summary & Continue -->
-            <div class="bg-white rounded-xl shadow-lg p-8 border-2 border-amber-100">
-                <h2 class="text-2xl font-bold text-amber-800 mb-6">
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 border-2 border-amber-100">
+                <h2 class="text-xl sm:text-2xl font-bold text-amber-800 mb-4 sm:mb-6">
                     <i class="fas fa-receipt mr-2"></i>Ringkasan Booking
                 </h2>
                 
-                <div class="grid md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                        <div class="space-y-3">
-                            <div class="flex justify-between">
+                        <div class="space-y-2 sm:space-y-3">
+                            <div class="flex justify-between text-sm sm:text-base">
                                 <span class="text-gray-600">Olahraga:</span>
                                 <span class="font-semibold">{{ $sport->name }}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between text-sm sm:text-base">
                                 <span class="text-gray-600">Lapangan:</span>
                                 <span class="font-semibold">{{ $court->name }}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between text-sm sm:text-base">
                                 <span class="text-gray-600">Tanggal:</span>
                                 <span class="font-semibold" id="selectedDate">-</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between text-sm sm:text-base">
                                 <span class="text-gray-600">Waktu:</span>
                                 <span class="font-semibold" id="selectedTime">-</span>
                             </div>
@@ -290,11 +281,11 @@
                     </div>
                     
                     <div>
-                        <div class="bg-amber-50 rounded-lg p-4">
+                        <div class="bg-amber-50 rounded-lg p-3 sm:p-4">
                             <div class="space-y-2">
-                                <div id="priceBreakdown" class="text-sm text-gray-600 mb-3"></div>
+                                <div id="priceBreakdown" class="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3"></div>
                                 <hr class="border-amber-200">
-                                <div class="flex justify-between font-bold text-lg">
+                                <div class="flex justify-between font-bold text-base sm:text-lg">
                                     <span>Total:</span>
                                     <span class="text-amber-600" id="totalPrice">Rp 0</span>
                                 </div>
@@ -304,16 +295,16 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8">
                     <a href="{{ route('booking.index') }}" 
-                       class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 text-center">
+                       class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 text-center text-sm sm:text-base">
                         <i class="fas fa-arrow-left mr-2"></i>Kembali
                     </a>
                     
                     <button type="submit" 
-                            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                             id="continueBtn" disabled>
-                        <i class="fas fa-arrow-right mr-2"></i>Lanjutkan ke Form Booking
+                        <i class="fas fa-arrow-right mr-2"></i><span class="hidden sm:inline">Lanjutkan ke </span>Form Booking
                     </button>
                 </div>
             </div>

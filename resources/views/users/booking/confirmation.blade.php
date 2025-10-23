@@ -96,19 +96,26 @@
                             <span class="inline-block px-3 py-1 
                                 @if($booking->status === 'confirmed') bg-green-100 text-green-800
                                 @elseif($booking->status === 'pending_payment') bg-yellow-100 text-yellow-800
+                                @elseif($booking->status === 'pending_confirmation') bg-orange-100 text-orange-800
                                 @elseif($booking->status === 'paid') bg-blue-100 text-blue-800
+                                @elseif($booking->status === 'completed') bg-purple-100 text-purple-800
+                                @elseif($booking->status === 'cancelled') bg-red-100 text-red-800
                                 @else bg-gray-100 text-gray-800 @endif 
                                 rounded-full text-sm font-semibold">
                                 <i class="fas 
                                     @if($booking->status === 'confirmed') fa-check-circle
                                     @elseif($booking->status === 'pending_payment') fa-clock
-                                    @elseif($booking->status === 'pending_confirmation') fa-clock
+                                    @elseif($booking->status === 'pending_confirmation') fa-hourglass-half
                                     @elseif($booking->status === 'paid') fa-credit-card
+                                    @elseif($booking->status === 'completed') fa-flag-checkered
+                                    @elseif($booking->status === 'cancelled') fa-times-circle
                                     @else fa-question-circle @endif mr-1"></i>
                                 @if($booking->status === 'confirmed') Dikonfirmasi
                                 @elseif($booking->status === 'pending_payment') Menunggu Pembayaran
                                 @elseif($booking->status === 'pending_confirmation') Menunggu Konfirmasi
                                 @elseif($booking->status === 'paid') Sudah Dibayar
+                                @elseif($booking->status === 'completed') Selesai
+                                @elseif($booking->status === 'cancelled') Dibatalkan
                                 @else {{ ucfirst($booking->status) }} @endif
                             </span>
                         </div>

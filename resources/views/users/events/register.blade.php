@@ -261,9 +261,12 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Posisi/Peran</label>
-                        <input type="text" name="team_members[${memberCount}][position]"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                               placeholder="Captain, Player, dll">
+                        <select name="team_members[${memberCount}][position]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                            <option value="">Pilih posisi</option>
+                            <option value="captain">Kapten</option>
+                            <option value="player">Pemain</option>
+                            <option value="substitute">Cadangan</option>
+                        </select>
                     </div>
                 </div>
             `;

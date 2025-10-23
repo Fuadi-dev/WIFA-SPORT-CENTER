@@ -6,7 +6,6 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\JadwalController;
 use App\Http\Controllers\MainController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Admin\BookingController as ManagementBookingController;
 use App\Http\Controllers\Admin\EventController as ManagementEventController;
 use App\Http\Controllers\Admin\UserController as ManagementUserController;
@@ -50,10 +49,6 @@ Route::post('/midtrans/notification', [BookingController::class, 'midtransNotifi
 
 Route::middleware(['auth'])->group(function () {
     Route::middleware(['status:active'])->group(function (){
-        //Route for Owner
-        Route::middleware(['role:owner'])->prefix('owner')->group(function () {
-            Route::get('/dashboard', [OwnerDashboardController::class, 'dashboard'])->name('owner.dashboard');
-        });
         //Route for Admin
         Route::middleware(['role:admin'])->prefix('admin')->group(function () {
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
