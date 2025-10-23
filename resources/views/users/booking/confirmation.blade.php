@@ -239,10 +239,15 @@
                     </ul>
                     
                     <!-- WhatsApp Confirmation Button for Cash Payment -->
-                    @if(session('whatsapp_url'))
-                    <div class="border-t pt-4">
+                    <div class="border-t pt-4" id="whatsappSection">
                         <p class="text-gray-700 mb-3 text-center font-semibold">Konfirmasi booking Anda melalui WhatsApp:</p>
-                        <a href="{{ session('whatsapp_url') }}" target="_blank" 
+                        @php
+                            $whatsappService = new \App\Services\WhatsAppService();
+                            $whatsappUrl = $whatsappService->generateBookingConfirmationUrl($booking);
+                        @endphp
+                        <a href="{{ $whatsappUrl }}" 
+                           target="_blank" 
+                           onclick="markWhatsAppClicked('{{ $booking->booking_code }}')"
                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 text-lg flex items-center justify-center">
                             <i class="fab fa-whatsapp mr-2 text-xl"></i>
                             Konfirmasi via WhatsApp
@@ -251,7 +256,15 @@
                             Pesan sudah disiapkan otomatis dengan detail lengkap booking Anda
                         </p>
                     </div>
-                    @endif
+                    
+                    <!-- Success Message after WhatsApp clicked -->
+                    <div class="border-t pt-4 hidden" id="whatsappSuccess">
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg text-center">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span class="font-semibold">WhatsApp sudah dibuka!</span>
+                            <p class="text-sm mt-1">Silakan lanjutkan konfirmasi di aplikasi WhatsApp Anda.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
             @endif
@@ -345,6 +358,31 @@
             snap_token_db: '{{ $booking->midtrans_snap_token }}',
             snap_token_session: '{{ session('snap_token') }}',
             client_key: '{{ config('midtrans.client_key') }}'
+        });
+        @endif
+
+        // Mark WhatsApp as clicked for cash payment
+        function markWhatsAppClicked(bookingCode) {
+            // Save to localStorage
+            localStorage.setItem('whatsapp_clicked_' + bookingCode, 'true');
+            
+            // Hide button and show success message
+            setTimeout(function() {
+                document.getElementById('whatsappSection').classList.add('hidden');
+                document.getElementById('whatsappSuccess').classList.remove('hidden');
+            }, 500); // Small delay to ensure WhatsApp opens
+        }
+
+        // Check if WhatsApp was already clicked for this booking
+        @if($booking->payment_method === 'cash')
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookingCode = '{{ $booking->booking_code }}';
+            const whatsappClicked = localStorage.getItem('whatsapp_clicked_' + bookingCode);
+            
+            if (whatsappClicked === 'true') {
+                document.getElementById('whatsappSection').classList.add('hidden');
+                document.getElementById('whatsappSuccess').classList.remove('hidden');
+            }
         });
         @endif
 

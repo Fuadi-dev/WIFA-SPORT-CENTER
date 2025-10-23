@@ -82,7 +82,8 @@
                                     <!-- Status Badge -->
                                     @php
                                         $statusConfig = [
-                                            'pending' => ['bg-yellow-100', 'text-yellow-800', 'fas fa-clock', 'Menunggu Konfirmasi'],
+                                            'pending_payment' => ['bg-yellow-100', 'text-yellow-800', 'fas fa-clock', 'Menunggu Pembayaran'],
+                                            'pending_confirmation' => ['bg-yellow-100', 'text-yellow-800', 'fas fa-clock', 'Menunggu Konfirmasi'],
                                             'confirmed' => ['bg-blue-100', 'text-blue-800', 'fas fa-check-circle', 'Dikonfirmasi'],
                                             'paid' => ['bg-green-100', 'text-green-800', 'fas fa-credit-card', 'Sudah Bayar'],
                                             'cancelled' => ['bg-red-100', 'text-red-800', 'fas fa-times-circle', 'Dibatalkan'],
@@ -191,11 +192,18 @@
                                     </button>
                                 @endif
                                 
-                                @if($booking->payment_method === 'transfer' && in_array($booking->status, ['pending', 'confirmed']))
-                                    <a href="https://wa.me/6281234567890?text=Halo,%20saya%20ingin%20konfirmasi%20pembayaran%20booking%20{{ $booking->booking_code }}" 
+                                <!-- WhatsApp Button for Cash Payment Only -->
+                                @if($booking->payment_method === 'cash' && in_array($booking->status, ['pending_confirmation', 'confirmed']))
+                                    @php
+                                        $whatsappService = new \App\Services\WhatsAppService();
+                                        $whatsappUrl = $whatsappService->generateBookingConfirmationUrl($booking);
+                                    @endphp
+                                    <a href="{{ $whatsappUrl }}" 
                                        target="_blank"
+                                       onclick="markWhatsAppClickedList('{{ $booking->booking_code }}')"
+                                       id="wa-btn-{{ $booking->booking_code }}"
                                        class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-300">
-                                        <i class="fab fa-whatsapp mr-2"></i>Konfirmasi Bayar
+                                        <i class="fab fa-whatsapp mr-2"></i>Hubungi Admin
                                     </a>
                                 @endif
                             </div>
@@ -237,6 +245,39 @@
                 });
             }
         }
+
+        // Mark WhatsApp as clicked for cash payment in listing
+        function markWhatsAppClickedList(bookingCode) {
+            // Save to localStorage
+            localStorage.setItem('whatsapp_clicked_' + bookingCode, 'true');
+            
+            // Hide button with animation
+            setTimeout(function() {
+                const button = document.getElementById('wa-btn-' + bookingCode);
+                if (button) {
+                    button.style.opacity = '0';
+                    button.style.transition = 'opacity 0.3s';
+                    setTimeout(function() {
+                        button.style.display = 'none';
+                    }, 300);
+                }
+            }, 500); // Small delay to ensure WhatsApp opens
+        }
+
+        // Check if WhatsApp was already clicked for each booking
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all booking codes from buttons
+            const waButtons = document.querySelectorAll('[id^="wa-btn-"]');
+            
+            waButtons.forEach(function(button) {
+                const bookingCode = button.id.replace('wa-btn-', '');
+                const whatsappClicked = localStorage.getItem('whatsapp_clicked_' + bookingCode);
+                
+                if (whatsappClicked === 'true') {
+                    button.style.display = 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>

@@ -267,7 +267,7 @@
                                 <i class="fab fa-whatsapp mr-1"></i>Konfirmasi otomatis via WhatsApp
                             </div>
                             <div class="text-xs text-green-600 mt-1">
-                                Status: Confirmed
+                                Status: Menunggu Konfirmasi
                             </div>
                         </div>
                     </label>
