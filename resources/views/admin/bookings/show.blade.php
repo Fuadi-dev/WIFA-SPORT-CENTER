@@ -158,8 +158,10 @@
                 <div>
                     <h4 class="text-lg font-semibold text-gray-900">{{ $booking->user->name ?? 'N/A' }}</h4>
                     <p class="text-gray-600">{{ $booking->user->email ?? 'N/A' }}</p>
-                    @if($booking->user && $booking->user->phone)
-                        <p class="text-gray-600">{{ $booking->user->phone }}</p>
+                    @if($booking->user && $booking->user->phone_number)
+                        <p class="text-gray-600">
+                            <i class="fas fa-phone mr-1"></i>{{ $booking->user->phone_number }}
+                        </p>
                     @endif
                 </div>
             </div>
@@ -195,6 +197,15 @@
             </h3>
             
             <div class="space-y-3">
+                <!-- Hubungi Pemesan -->
+                @if($booking->user && $booking->user->phone_number)
+                    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $booking->user->phone_number) }}?text=Halo%20{{ urlencode($booking->user->name) }},%20mengenai%20booking%20{{ urlencode($booking->booking_code) }}" 
+                       target="_blank"
+                       class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
+                        <i class="fab fa-whatsapp mr-2"></i>Hubungi Pemesan
+                    </a>
+                @endif
+                
                 <!-- Print/Download -->
                 <button onclick="window.print()" 
                         class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">

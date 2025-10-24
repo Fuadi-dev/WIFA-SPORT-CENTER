@@ -13,16 +13,11 @@
                     <p class="mt-2 text-gray-600">Analisis dan statistik booking lapangan</p>
                 </div>
                 
-                <div class="mt-4 md:mt-0 flex space-x-3">
-                    <button onclick="printReport()" 
-                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-print mr-2"></i>
-                        Cetak
-                    </button>
+                <div class="mt-4 md:mt-0">
                     <button onclick="exportReport()" 
                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                         <i class="fas fa-file-excel mr-2"></i>
-                        Export CSV
+                        Export Excel
                     </button>
                 </div>
             </div>
@@ -31,17 +26,17 @@
 
     <!-- Statistics Cards -->
     <div class="px-6 py-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 
-            <!-- Total Revenue -->
+            <!-- Pending Confirmation -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Total Pendapatan</p>
-                        <p class="text-3xl font-bold text-green-600 mt-2">Rp {{ number_format($stats['total_revenue'], 0, ',', '.') }}</p>
+                        <p class="text-sm font-medium text-gray-600">Menunggu Konfirmasi</p>
+                        <p class="text-3xl font-bold text-orange-600 mt-2">{{ number_format($stats['pending_confirmation']) }}</p>
                     </div>
-                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-money-bill-wave text-green-600 text-xl"></i>
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-hourglass-half text-orange-600 text-xl"></i>
                     </div>
                 </div>
             </div>
@@ -71,13 +66,26 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Total Bookings -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Booking</p>
+                        <p class="text-3xl font-bold text-blue-600 mt-2">{{ number_format($bookings->total()) }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-list text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Filters -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Laporan</h3>
             <form method="GET" action="{{ route('admin.reports.bookings') }}" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Date Range -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
@@ -123,10 +131,21 @@
                         <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                             <option value="">Semua Status</option>
                             <option value="pending_payment" {{ request('status') === 'pending_payment' ? 'selected' : '' }}>Menunggu Pembayaran</option>
+                            <option value="pending_confirmation" {{ request('status') === 'pending_confirmation' ? 'selected' : '' }}>Menunggu Konfirmasi</option>
                             <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>Dikonfirmasi</option>
                             <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Dibayar</option>
                             <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Selesai</option>
                             <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Payment Method Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pembayaran</label>
+                        <select name="payment_method" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                            <option value="">Semua Metode</option>
+                            <option value="midtrans" {{ request('payment_method') === 'midtrans' ? 'selected' : '' }}>Midtrans (Online)</option>
+                            <option value="cash" {{ request('payment_method') === 'cash' ? 'selected' : '' }}>Tunai</option>
                         </select>
                     </div>
                 </div>
@@ -177,6 +196,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pelanggan</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lapangan</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metode</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             </tr>
@@ -202,21 +222,47 @@
                                         <div class="text-sm text-gray-900">{{ substr($booking->start_time, 0, 5) }} - {{ substr($booking->end_time, 0, 5) }}</div>
                                     </td>
                                     <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            @if($booking->payment_method === 'midtrans')
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 payment-badge-print" style="background-color: #DBEAFE; color: #1E40AF;">
+                                                    <i class="fas fa-credit-card mr-1"></i> Midtrans
+                                                </span>
+                                            @elseif($booking->payment_method === 'cash')
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 payment-badge-print" style="background-color: #D1FAE5; color: #065F46;">
+                                                    <i class="fas fa-money-bill mr-1"></i> Tunai
+                                                </span>
+                                            @else
+                                                <span class="text-gray-500 text-xs">-</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
                                         <div class="text-sm font-medium text-gray-900">Rp {{ number_format($booking->total_price, 0, ',', '.') }}</div>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full status-badge-print
                                             @if($booking->status === 'paid') bg-green-100 text-green-800
                                             @elseif($booking->status === 'confirmed') bg-blue-100 text-blue-800
                                             @elseif($booking->status === 'completed') bg-purple-100 text-purple-800
                                             @elseif($booking->status === 'pending_payment') bg-yellow-100 text-yellow-800
+                                            @elseif($booking->status === 'pending_confirmation') bg-orange-100 text-orange-800
                                             @elseif($booking->status === 'cancelled') bg-red-100 text-red-800
                                             @else bg-gray-100 text-gray-800
+                                            @endif"
+                                            style="
+                                            @if($booking->status === 'paid') background-color: #D1FAE5; color: #065F46;
+                                            @elseif($booking->status === 'confirmed') background-color: #DBEAFE; color: #1E40AF;
+                                            @elseif($booking->status === 'completed') background-color: #EDE9FE; color: #5B21B6;
+                                            @elseif($booking->status === 'pending_payment') background-color: #FEF3C7; color: #92400E;
+                                            @elseif($booking->status === 'pending_confirmation') background-color: #FED7AA; color: #9A3412;
+                                            @elseif($booking->status === 'cancelled') background-color: #FEE2E2; color: #991B1B;
+                                            @else background-color: #F3F4F6; color: #1F2937;
                                             @endif">
                                             @if($booking->status === 'paid') Dibayar
                                             @elseif($booking->status === 'confirmed') Dikonfirmasi
                                             @elseif($booking->status === 'completed') Selesai
                                             @elseif($booking->status === 'pending_payment') Menunggu Pembayaran
+                                            @elseif($booking->status === 'pending_confirmation') Menunggu Konfirmasi
                                             @elseif($booking->status === 'cancelled') Dibatalkan
                                             @else {{ ucfirst($booking->status) }}
                                             @endif
@@ -257,11 +303,6 @@
     function exportReport() {
         const params = new URLSearchParams(window.location.search);
         window.location.href = "{{ route('admin.reports.bookings.export') }}?" + params.toString();
-    }
-    
-    // Print Report Function
-    function printReport() {
-        window.print();
     }
     
     // Initialize charts when document is ready
@@ -373,23 +414,4 @@
         }
     });
 </script>
-
-<style>
-    @media print {
-        .admin-sidebar,
-        button,
-        .pagination,
-        nav {
-            display: none !important;
-        }
-        
-        .main-content {
-            margin-left: 0 !important;
-        }
-        
-        body {
-            background: white !important;
-        }
-    }
-</style>
 @endpush
