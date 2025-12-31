@@ -549,7 +549,16 @@ class BookingController extends Controller
         
         // Cek apakah ini booking last minute (kurang dari 1 jam sebelum waktu booking)
         // Booking last minute tidak akan di-auto cancel oleh sistem
-        $isLastMinuteBooking = $bookingDateTime->diffInMinutes(now()) < 60;
+        // diffInMinutes(now(), false) returns positive if bookingDateTime is in future
+        $minutesUntilBooking = now()->diffInMinutes($bookingDateTime, false);
+        $isLastMinuteBooking = $minutesUntilBooking >= 0 && $minutesUntilBooking < 60;
+        
+        Log::info('Booking last minute check', [
+            'booking_date_time' => $bookingDateTime->format('Y-m-d H:i:s'),
+            'now' => now()->format('Y-m-d H:i:s'),
+            'minutes_until_booking' => $minutesUntilBooking,
+            'is_last_minute' => $isLastMinuteBooking
+        ]);
         
         $bookingCode = Str::random(10);
 

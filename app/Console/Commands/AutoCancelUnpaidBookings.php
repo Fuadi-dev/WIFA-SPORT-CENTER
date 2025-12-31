@@ -21,7 +21,7 @@ class AutoCancelUnpaidBookings extends Command
      *
      * @var string
      */
-    protected $description = 'Automatically cancel pending_confirmation bookings less than 1 hour before booking time (except last minute bookings)';
+    protected $description = 'Automatically cancel pending bookings less than 1 hour before booking time (except last minute bookings)';
 
     /**
      * Execute the console command.
@@ -29,6 +29,7 @@ class AutoCancelUnpaidBookings extends Command
     public function handle()
     {
         $this->info('🔍 Checking for pending bookings to auto-cancel...');
+        $this->info('📅 Current time: ' . Carbon::now()->format('Y-m-d H:i:s'));
         
         $now = Carbon::now();
         $oneHourFromNow = $now->copy()->addHour();
@@ -39,18 +40,12 @@ class AutoCancelUnpaidBookings extends Command
         // Kriteria:
         // - Status pending_confirmation
         // - Payment method cash
-        // - Bukan last minute booking (is_last_minute_booking = false)
+        // - Bukan last minute booking (user yang langsung mau main dikecualikan)
         // - Kurang dari 1 jam sebelum waktu booking
         
         $pendingBookings = Booking::where('status', 'pending_confirmation')
             ->where('payment_method', 'cash')
             ->where('is_last_minute_booking', false)
-            ->where(function ($query) use ($now) {
-                // Booking date sudah lewat
-                $query->where('booking_date', '<', $now->toDateString())
-                    // Atau booking hari ini
-                    ->orWhere('booking_date', $now->toDateString());
-            })
             ->get();
         
         $this->info("📋 Found {$pendingBookings->count()} pending cash bookings to check");
@@ -95,18 +90,14 @@ class AutoCancelUnpaidBookings extends Command
         }
         
         // === CANCEL BOOKING MIDTRANS YANG BELUM DIBAYAR ===
-        // Kriteria sama dengan cash:
+        // Kriteria:
         // - Status pending_payment
         // - Payment method midtrans
-        // - Bukan last minute booking
+        // - Bukan last minute booking (user yang langsung mau main dikecualikan)
         // - Kurang dari 1 jam sebelum waktu booking
         $pendingMidtransBookings = Booking::where('status', 'pending_payment')
             ->where('payment_method', 'midtrans')
             ->where('is_last_minute_booking', false)
-            ->where(function ($query) use ($now) {
-                $query->where('booking_date', '<', $now->toDateString())
-                    ->orWhere('booking_date', $now->toDateString());
-            })
             ->get();
         
         $this->info("💳 Found {$pendingMidtransBookings->count()} pending midtrans bookings to check");
