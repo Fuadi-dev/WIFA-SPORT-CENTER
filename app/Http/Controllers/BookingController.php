@@ -542,16 +542,14 @@ class BookingController extends Controller
         // Calculate final price
         $totalPrice = $originalPrice - $discountAmount;
 
-        // SPECIAL HANDLING: Booking hari ini dengan CASH langsung confirmed
+        // Status awal untuk pembayaran cash selalu pending_confirmation
+        // Admin harus konfirmasi manual
         $initialStatus = $request->payment_method === 'cash' ? 'pending_confirmation' : 'pending_payment';
         $confirmedAt = null;
         
-        if ($bookingDate->isToday() && $request->payment_method === 'cash') {
-            $initialStatus = 'confirmed';
-            $confirmedAt = now();
-        } elseif ($request->payment_method === 'cash') {
-            $confirmedAt = now();
-        }
+        // Cek apakah ini booking last minute (kurang dari 1 jam sebelum waktu booking)
+        // Booking last minute tidak akan di-auto cancel oleh sistem
+        $isLastMinuteBooking = $bookingDateTime->diffInMinutes(now()) < 60;
         
         $bookingCode = Str::random(10);
 
@@ -574,6 +572,7 @@ class BookingController extends Controller
             'discount_amount' => $discountAmount,
             'total_price' => $totalPrice,
             'status' => $initialStatus,
+            'is_last_minute_booking' => $isLastMinuteBooking,
             'confirmed_at' => $confirmedAt
         ]);
 

@@ -25,10 +25,12 @@ class Booking extends Model
         'payment_method',
         'total_price',
         'status',
+        'is_last_minute_booking',
         'midtrans_snap_token',
         'midtrans_order_id',
         'confirmed_at',
         'paid_at',
+        'auto_cancelled_at',
         'promo_code_id',
         'auto_promo_id',
         'discount_amount',
@@ -43,7 +45,9 @@ class Booking extends Model
         'discount_amount' => 'decimal:2',
         'original_price' => 'decimal:2',
         'confirmed_at' => 'datetime',
-        'paid_at' => 'datetime'
+        'paid_at' => 'datetime',
+        'auto_cancelled_at' => 'datetime',
+        'is_last_minute_booking' => 'boolean',
     ];
 
     protected $dates = [
@@ -105,5 +109,89 @@ class Booking extends Model
     public function autoPromo()
     {
         return $this->belongsTo(AutoPromo::class);
+    }
+
+    /**
+     * Scope untuk booking yang pending confirmation dan harus di-auto cancel
+     * Kriteria:
+     * - Status pending_confirmation
+     * - Payment method cash
+     * - Bukan last minute booking
+     * - Kurang dari 1 jam sebelum waktu booking
+     */
+    public function scopeEligibleForAutoCancel($query)
+    {
+        $oneHourFromNow = Carbon::now()->addHour();
+        
+        return $query->where('status', 'pending_confirmation')
+            ->where('payment_method', 'cash')
+            ->where('is_last_minute_booking', false)
+            ->where(function ($q) use ($oneHourFromNow) {
+                // Booking date sudah lewat
+                $q->where('booking_date', '<', Carbon::today())
+                    // Atau booking hari ini tapi start_time kurang dari 1 jam dari sekarang
+                    ->orWhere(function ($q2) use ($oneHourFromNow) {
+                        $q2->where('booking_date', Carbon::today())
+                            ->whereRaw("CONCAT(booking_date, ' ', start_time) <= ?", [$oneHourFromNow->format('Y-m-d H:i:s')]);
+                    });
+            });
+    }
+
+    /**
+     * Auto cancel booking ini
+     */
+    public function autoCancel(): bool
+    {
+        $this->status = 'cancelled';
+        $this->auto_cancelled_at = Carbon::now();
+        return $this->save();
+    }
+
+    /**
+     * Cek apakah booking ini eligible untuk di-auto cancel
+     */
+    public function isEligibleForAutoCancel(): bool
+    {
+        if ($this->status !== 'pending_confirmation') {
+            return false;
+        }
+        
+        if ($this->payment_method !== 'cash') {
+            return false;
+        }
+        
+        if ($this->is_last_minute_booking) {
+            return false;
+        }
+        
+        $bookingDateTime = Carbon::parse($this->booking_date->format('Y-m-d') . ' ' . $this->start_time->format('H:i:s'));
+        $oneHourFromNow = Carbon::now()->addHour();
+        
+        return $bookingDateTime->lte($oneHourFromNow);
+    }
+
+    /**
+     * Get formatted status label
+     */
+    public function getStatusLabel(): string
+    {
+        $labels = [
+            'pending_payment' => 'Menunggu Pembayaran',
+            'pending_confirmation' => 'Menunggu Konfirmasi Admin',
+            'confirmed' => 'Terkonfirmasi',
+            'paid' => 'Lunas',
+            'cancelled' => 'Dibatalkan',
+            'completed' => 'Selesai',
+        ];
+
+        return $labels[$this->status] ?? $this->status;
+    }
+
+    /**
+     * Cek apakah booking dibatalkan otomatis oleh sistem
+     */
+    public function wasAutoCancelled(): bool
+    {
+        return $this->status === 'cancelled' && $this->auto_cancelled_at !== null;
     }
 }
