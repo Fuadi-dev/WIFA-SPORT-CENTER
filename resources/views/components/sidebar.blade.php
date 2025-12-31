@@ -64,6 +64,12 @@
                         </a>
                     </div>
                 </div>
+                
+                <!-- Price Management -->
+                <a href="{{ route('admin.prices.index') }}" class="menu-item flex items-center px-3 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.prices.*') ? 'active' : 'text-amber-100 hover:text-white' }}">
+                    <i class="fas fa-money-bill-alt w-5 mr-3"></i>
+                    Manajemen Harga
+                </a>
             </div>
             
             <div class="mb-6">

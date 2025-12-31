@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserController as ManagementUserController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\PromoCodeController;
 use App\Http\Controllers\Admin\AutoPromoController;
+use App\Http\Controllers\Admin\SportPriceController;
 use App\Http\Controllers\EventController;
 
 Route::get('/',[MainController::class, 'index'])->name('home');
@@ -123,6 +124,15 @@ Route::middleware(['auth'])->group(function () {
                 Route::patch('/{id}', [AutoPromoController::class, 'update'])->name('update');
                 Route::delete('/{id}', [AutoPromoController::class, 'destroy'])->name('destroy');
                 Route::patch('/{id}/toggle-status', [AutoPromoController::class, 'toggleStatus'])->name('toggleStatus');
+            });
+            
+            // Admin Price Management
+            Route::prefix('prices')->name('admin.prices.')->group(function () {
+                Route::get('/', [SportPriceController::class, 'index'])->name('index');
+                Route::post('/', [SportPriceController::class, 'store'])->name('store');
+                Route::patch('/bulk', [SportPriceController::class, 'updateBulk'])->name('updateBulk');
+                Route::patch('/{id}/toggle-status', [SportPriceController::class, 'toggleStatus'])->name('toggleStatus');
+                Route::delete('/{id}', [SportPriceController::class, 'destroy'])->name('destroy');
             });
             
         });
