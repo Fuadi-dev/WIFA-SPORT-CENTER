@@ -270,11 +270,23 @@
                                     </button>
                                 @endif
                                 
-                                <!-- Delete - Only if booking date + time hasn't passed -->
+                                <!-- Cancel Booking - Only before start time and not already cancelled/completed -->
                                 @php
                                     $bookingDate = \Carbon\Carbon::parse($booking->booking_date);
-                                    $startTime = \Carbon\Carbon::parse($booking->start_time);
-                                    $bookingDateTime = $bookingDate->setTimeFromTimeString($booking->start_time);
+                                    $bookingDateTime = $bookingDate->copy()->setTimeFromTimeString($booking->start_time);
+                                    $canCancel = $bookingDateTime->isFuture() && !in_array($booking->status, ['cancelled', 'completed']);
+                                @endphp
+                                
+                                @if($canCancel)
+                                    <button onclick="confirmCancel('{{ $booking->slug }}', '{{ $booking->booking_code }}')" 
+                                            class="text-orange-600 hover:text-orange-900 p-1 rounded" 
+                                            title="Batalkan Booking">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                @endif
+                                
+                                <!-- Delete - Only if booking date + time hasn't passed -->
+                                @php
                                     $canDelete = $bookingDateTime->isFuture();
                                 @endphp
                                 
@@ -316,101 +328,165 @@
     @endif
 </div>
 
-<!-- Confirm Booking Modal -->
-<div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Konfirmasi Booking</h3>
-                <button onclick="closeConfirmModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <p class="text-gray-600 mb-6">Apakah Anda yakin ingin mengkonfirmasi booking <span id="confirmBookingCode" class="font-semibold"></span>?</p>
-            
-            <form id="confirmForm" method="POST">
-                @csrf
-                @method('PATCH')
-                
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
-                        Batal
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                        <i class="fas fa-check mr-1"></i> Konfirmasi
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Konfirmasi Hapus</h3>
-                <button onclick="closeDeleteModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <p class="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus booking <span id="deleteBookingCode" class="font-semibold"></span>? Tindakan ini tidak dapat dibatalkan.</p>
-            
-            <form id="deleteForm" method="POST">
-                @csrf
-                @method('DELETE')
-                
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
-                        Batal
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                        Hapus Booking
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
 <script>
     function confirmBooking(bookingSlug, bookingCode) {
-        document.getElementById('confirmModal').classList.remove('hidden');
-        document.getElementById('confirmForm').action = `/admin/bookings/${bookingSlug}/confirm`;
-        document.getElementById('confirmBookingCode').textContent = bookingCode;
-    }
-    
-    function closeConfirmModal() {
-        document.getElementById('confirmModal').classList.add('hidden');
+        Swal.fire({
+            title: '<strong>Konfirmasi Booking</strong>',
+            html: `
+                <div class="text-left space-y-3">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <p class="text-gray-700 mb-2">
+                            Apakah Anda yakin ingin mengkonfirmasi booking ini?
+                        </p>
+                        <p class="text-sm font-mono font-bold text-blue-700">
+                            <i class="fas fa-hashtag mr-1"></i>${bookingCode}
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
+                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        Status booking akan berubah menjadi <strong class="text-green-600">Confirmed</strong>
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check-circle mr-2"></i>Ya, Konfirmasi',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Batal',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            width: '500px',
+            customClass: {
+                confirmButton: 'px-6 py-2 rounded-lg font-semibold',
+                cancelButton: 'px-6 py-2 rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses...',
+                    html: '<i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>',
+                    allowOutsideClick: false,
+                    showConfirmButton: false
+                });
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/bookings/${bookingSlug}/confirm`;
+                form.innerHTML = `@csrf @method('PATCH')`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     }
     
     function confirmDelete(bookingSlug, bookingCode) {
-        document.getElementById('deleteModal').classList.remove('hidden');
-        document.getElementById('deleteForm').action = `/admin/bookings/${bookingSlug}`;
-        document.getElementById('deleteBookingCode').textContent = bookingCode;
+        Swal.fire({
+            title: '<strong class="text-red-600">Hapus Booking?</strong>',
+            html: `
+                <div class="text-left space-y-3">
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <p class="text-gray-700 mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                            Anda akan menghapus booking:
+                        </p>
+                        <p class="text-sm font-mono font-bold text-red-700">
+                            ${bookingCode}
+                        </p>
+                    </div>
+                    <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-sm">
+                        <p class="text-gray-700 font-semibold mb-1">
+                            <i class="fas fa-exclamation-circle text-yellow-600 mr-1"></i>
+                            Peringatan:
+                        </p>
+                        <ul class="text-gray-600 ml-5 list-disc space-y-1">
+                            <li>Tindakan ini tidak dapat dibatalkan</li>
+                            <li>Data booking akan dihapus permanen</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-trash mr-2"></i>Ya, Hapus',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Batal',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            width: '550px'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Menghapus...',
+                    html: '<i class="fas fa-spinner fa-spin text-3xl text-red-500"></i>',
+                    allowOutsideClick: false,
+                    showConfirmButton: false
+                });
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/bookings/${bookingSlug}`;
+                form.innerHTML = `@csrf @method('DELETE')`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     }
     
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.add('hidden');
+    function confirmCancel(bookingSlug, bookingCode) {
+        Swal.fire({
+            title: '<strong class="text-orange-600">Batalkan Booking?</strong>',
+            html: `
+                <div class="text-left space-y-3">
+                    <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                        <p class="text-gray-700 mb-2">
+                            <i class="fas fa-ban text-orange-500 mr-2"></i>
+                            Anda akan membatalkan booking:
+                        </p>
+                        <p class="text-sm font-mono font-bold text-orange-700">
+                            ${bookingCode}
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg text-sm">
+                        <p class="text-gray-700 mb-2">
+                            <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                            <strong>Yang akan terjadi:</strong>
+                        </p>
+                        <ul class="text-gray-600 ml-5 list-disc space-y-1">
+                            <li>Status berubah menjadi <strong class="text-red-600">Cancelled</strong></li>
+                            <li>Slot waktu akan tersedia kembali</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-ban mr-2"></i>Ya, Batalkan',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Tidak',
+            confirmButtonColor: '#f97316',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            width: '550px'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Membatalkan...',
+                    html: '<i class="fas fa-spinner fa-spin text-3xl text-orange-500"></i>',
+                    allowOutsideClick: false,
+                    showConfirmButton: false
+                });
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/bookings/${bookingSlug}/cancel`;
+                form.innerHTML = `@csrf @method('PATCH')`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     }
-    
-    // Close modals when clicking outside
-    document.getElementById('confirmModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeConfirmModal();
-        }
-    });
-    
-    document.getElementById('deleteModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeDeleteModal();
-        }
-    });
 </script>
 @endpush
 
@@ -421,24 +497,6 @@
             <div class="p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-2xl font-semibold text-gray-800">
-                        <i class="fas fa-plus-circle text-green-600 mr-2"></i>
-                        Tambah Booking Manual
-                    </h3>
-                    <button onclick="closeManualBookingModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                
-                <form id="manualBookingForm">
-                    @csrf
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        
-                        <!-- Left Column: User & Booking Info -->
-                        <div class="space-y-6">
-                            <!-- User Selection -->
-                            <div class="bg-blue-50 rounded-xl p-6">
-                                <h4 class="text-lg font-semibold text-blue-800 mb-4">
-                                    <i class="fas fa-user mr-2"></i>Informasi Penyewa
                                 </h4>
                                 
                                 <div class="relative">
@@ -611,6 +669,9 @@
                                 <div class="bg-white rounded-lg p-4 border border-purple-200">
                                     <div class="text-sm text-gray-600 mb-2">Estimasi Harga:</div>
                                     <div id="pricePreview" class="text-xl font-bold text-purple-800">-</div>
+                                    <div id="availabilityStatus" class="mt-3 hidden">
+                                        <!-- Availability status will be shown here -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -815,6 +876,7 @@ async function loadCourtsForBooking(sportId) {
             courtSelect.appendChild(option);
         });
         courtSelect.disabled = false;
+        checkAvailabilityManual(); // Check when court changes
         checkFormValidity();
     } catch (error) {
         console.error('Error loading courts:', error);
@@ -849,6 +911,7 @@ function updateEndTimeOptions() {
     }
     
     endTimeSelect.disabled = false;
+    checkAvailabilityManual(); // Check when time changes
     checkFormValidity();
 }
 
@@ -870,9 +933,102 @@ document.querySelectorAll('input[name="date"]').forEach(input => {
         this.nextElementSibling.classList.add('border-purple-500', 'bg-purple-100');
         
         calculatePrice();
+        checkAvailabilityManual(); // Check availability when date changes
         checkFormValidity();
     });
 });
+
+// Check availability for manual booking
+async function checkAvailabilityManual() {
+    const selectedDate = document.querySelector('input[name="date"]:checked')?.value;
+    const startTime = document.getElementById('startTimeSelect').value;
+    const endTime = document.getElementById('endTimeSelect').value;
+    const courtId = document.getElementById('courtSelect').value;
+    const availabilityStatus = document.getElementById('availabilityStatus');
+    
+    if (!selectedDate || !startTime || !endTime || !courtId) {
+        availabilityStatus.classList.add('hidden');
+        return; // Not enough data to check
+    }
+    
+    // Show loading state
+    availabilityStatus.classList.remove('hidden');
+    availabilityStatus.innerHTML = '<span class="text-gray-600"><i class="fas fa-spinner fa-spin mr-2"></i>Memeriksa ketersediaan...</span>';
+    
+    try {
+        const response = await fetch('{{ route("booking.check-availability") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                court_id: courtId,
+                date: selectedDate,
+                start_time: startTime,
+                end_time: endTime
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Show availability status
+        if (!data.available) {
+            let message = 'Slot waktu tidak tersedia!';
+            let icon = 'fa-times-circle';
+            
+            if (data.reason === 'event') {
+                message = `Ada event: "${data.event?.title || 'Event'}" - Lapangan tidak tersedia`;
+                icon = 'fa-trophy';
+            } else if (data.reason === 'booked') {
+                message = 'Sudah ada booking lain pada waktu ini';
+                icon = 'fa-calendar-times';
+            }
+            
+            // Show error status
+            availabilityStatus.innerHTML = `
+                <div class="flex items-center text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                    <i class="fas ${icon} mr-2"></i>
+                    <span class="font-semibold">${message}</span>
+                </div>
+            `;
+            
+            // Update price preview with error
+            const pricePreview = document.getElementById('pricePreview');
+            pricePreview.innerHTML = '<span class="text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i>Tidak Tersedia</span>';
+            pricePreview.classList.remove('bg-purple-50', 'text-purple-600');
+            pricePreview.classList.add('bg-red-50', 'text-red-600');
+            
+            // Disable submit button
+            document.getElementById('submitBookingBtn').disabled = true;
+            
+            return false;
+        } else {
+            // Show success status
+            availabilityStatus.innerHTML = `
+                <div class="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span class="font-semibold">Slot tersedia untuk booking</span>
+                </div>
+            `;
+            
+            // Restore price preview styling
+            const pricePreview = document.getElementById('pricePreview');
+            pricePreview.classList.remove('bg-red-50', 'text-red-600');
+            pricePreview.classList.add('bg-purple-50', 'text-purple-600');
+            
+            // Recalculate price
+            calculatePrice();
+            checkFormValidity();
+            
+            return true;
+        }
+    } catch (error) {
+        console.error('Error checking availability:', error);
+        availabilityStatus.innerHTML = '<span class="text-yellow-600"><i class="fas fa-exclamation-triangle mr-2"></i>Gagal memeriksa ketersediaan</span>';
+        return true; // Allow booking if check fails
+    }
+}
 
 // Price calculation
 function calculatePrice() {
@@ -900,45 +1056,45 @@ function calculatePrice() {
     const sportSelect = document.getElementById('sportSelect');
     const sportName = sportSelect.options[sportSelect.selectedIndex].text;
     
-    let basePrice = 0;
+    let totalPrice = 0;
     
-    // Price calculation based on price list image
-    if (sportName === 'Futsal' || sportName === 'Basket') {
-        if (startHour >= 8 && startHour < 12) {
-            // Morning: 08:00-12:00
-            basePrice = isWeekend ? 65000 : 60000;
-        } else if (startHour >= 12 && startHour < 18) {
-            // Afternoon: 12:00-18:00  
-            basePrice = isWeekend ? 85000 : 80000;
-        } else {
-            // Evening: 18:00-00:00
-            basePrice = isWeekend ? 105000 : 100000;
+    // Calculate price hour by hour (same logic as backend)
+    for (let hour = startHour; hour < endHour; hour++) {
+        let hourPrice = 0;
+        
+        // Morning: 08:00-12:00
+        if (hour >= 8 && hour < 12) {
+            if (sportName === 'Futsal' || sportName === 'Basket') {
+                hourPrice = isWeekend ? 65000 : 60000;
+            } else if (sportName === 'Badminton') {
+                hourPrice = isWeekend ? 35000 : 30000;
+            } else if (sportName === 'Voli' || sportName === 'Volleyball') {
+                hourPrice = isWeekend ? 55000 : 50000;
+            }
         }
-    } else if (sportName === 'Badminton') {
-        if (startHour >= 8 && startHour < 12) {
-            // Morning: 08:00-12:00
-            basePrice = isWeekend ? 35000 : 30000;
-        } else if (startHour >= 12 && startHour < 18) {
-            // Afternoon: 12:00-18:00
-            basePrice = isWeekend ? 40000 : 35000;
-        } else {
-            // Evening: 18:00-00:00
-            basePrice = isWeekend ? 45000 : 40000;
+        // Afternoon: 12:00-18:00  
+        else if (hour >= 12 && hour < 18) {
+            if (sportName === 'Futsal' || sportName === 'Basket') {
+                hourPrice = isWeekend ? 85000 : 80000;
+            } else if (sportName === 'Badminton') {
+                hourPrice = isWeekend ? 40000 : 35000;
+            } else if (sportName === 'Voli' || sportName === 'Volleyball') {
+                hourPrice = isWeekend ? 65000 : 60000;
+            }
         }
-    } else if (sportName === 'Voli') {
-        if (startHour >= 8 && startHour < 12) {
-            // Morning: 08:00-12:00
-            basePrice = isWeekend ? 55000 : 50000;
-        } else if (startHour >= 12 && startHour < 18) {
-            // Afternoon: 12:00-18:00
-            basePrice = isWeekend ? 65000 : 60000;
-        } else {
-            // Evening: 18:00-00:00
-            basePrice = isWeekend ? 75000 : 70000;
+        // Evening: 18:00-24:00
+        else {
+            if (sportName === 'Futsal' || sportName === 'Basket') {
+                hourPrice = isWeekend ? 105000 : 100000;
+            } else if (sportName === 'Badminton') {
+                hourPrice = isWeekend ? 45000 : 40000;
+            } else if (sportName === 'Voli' || sportName === 'Volleyball') {
+                hourPrice = isWeekend ? 75000 : 70000;
+            }
         }
+        
+        totalPrice += hourPrice;
     }
-    
-    const totalPrice = basePrice * duration;
     
     document.getElementById('pricePreview').textContent = 
         'Rp ' + totalPrice.toLocaleString('id-ID') + ` (${duration} jam)`;
@@ -947,6 +1103,7 @@ function calculatePrice() {
 // End time change handler
 document.getElementById('endTimeSelect').addEventListener('change', function() {
     calculatePrice();
+    checkAvailabilityManual(); // Check when end time changes
     checkFormValidity();
 });
 
@@ -974,10 +1131,14 @@ document.getElementById('sportSelect').addEventListener('change', function() {
     calculatePrice(); // Recalculate price when sport changes
 });
 document.getElementById('courtSelect').addEventListener('change', function() {
+    checkAvailabilityManual(); // Check when court changes
     checkFormValidity();
     calculatePrice(); // Recalculate price when court changes
 });
-document.getElementById('startTimeSelect').addEventListener('change', checkFormValidity);
+document.getElementById('startTimeSelect').addEventListener('change', function() {
+    checkAvailabilityManual(); // Check when start time changes
+    checkFormValidity();
+});
 
 // Form submission
 document.getElementById('manualBookingForm').addEventListener('submit', function(e) {
@@ -987,8 +1148,21 @@ document.getElementById('manualBookingForm').addEventListener('submit', function
     const submitBtn = document.getElementById('submitBookingBtn');
     const originalText = submitBtn.innerHTML;
     
+    // Disable button and show loading
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+    
+    // Show loading alert
+    Swal.fire({
+        title: 'Memproses Booking...',
+        html: '<div class="text-center"><i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-3"></i><p class="text-gray-600">Mohon tunggu, sedang menyimpan booking...</p></div>',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
     
     fetch('{{ route("admin.bookings.manual.store") }}', {
         method: 'POST',
@@ -998,39 +1172,184 @@ document.getElementById('manualBookingForm').addEventListener('submit', function
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    .then(response => {
+        // Handle both success and error responses
+        return response.json().then(data => ({
+            status: response.status,
+            ok: response.ok,
+            data: data
+        }));
+    })
+    .then(({status, ok, data}) => {
+        if (ok && data.success) {
+            // SUCCESS - Booking created successfully
             Swal.fire({
                 icon: 'success',
-                title: 'Berhasil!',
-                text: 'Booking manual berhasil dibuat',
+                title: '<strong class="text-green-600">Booking Berhasil Dibuat!</strong>',
+                html: `
+                    <div class="text-left space-y-3 p-4">
+                        <div class="flex items-start space-x-3 bg-green-50 p-3 rounded-lg">
+                            <i class="fas fa-check-circle text-green-500 text-xl mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800">Booking telah berhasil disimpan</p>
+                                <p class="text-sm text-gray-600 mt-1">Kode Booking: <span class="font-mono font-bold text-green-700">${data.booking?.booking_code || '-'}</span></p>
+                            </div>
+                        </div>
+                        
+                        ${data.booking ? `
+                        <div class="bg-gray-50 p-3 rounded-lg space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tim:</span>
+                                <span class="font-semibold">${data.booking.team_name}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tanggal:</span>
+                                <span class="font-semibold">${new Date(data.booking.booking_date).toLocaleDateString('id-ID')}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Waktu:</span>
+                                <span class="font-semibold">${data.booking.start_time} - ${data.booking.end_time}</span>
+                            </div>
+                            <div class="flex justify-between border-t border-gray-200 pt-2 mt-2">
+                                <span class="text-gray-600">Total Harga:</span>
+                                <span class="font-bold text-green-600">Rp ${parseInt(data.booking.total_price).toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="text-center text-sm text-gray-500 mt-3">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Halaman akan dimuat ulang...
+                        </div>
+                    </div>
+                `,
                 showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true
+                timer: 3000,
+                timerProgressBar: true,
+                width: '600px',
+                didOpen: () => {
+                    const progressBar = Swal.getHtmlContainer().querySelector('.swal2-timer-progress-bar');
+                    if (progressBar) {
+                        progressBar.style.background = '#10b981';
+                    }
+                }
             }).then(() => {
                 closeManualBookingModal();
                 location.reload();
             });
+            
         } else {
+            // ERROR - Failed to create booking
+            let errorTitle = 'Gagal Membuat Booking';
+            let errorMessage = data.message || 'Terjadi kesalahan saat membuat booking';
+            let errorIcon = 'error';
+            let additionalInfo = '';
+            
+            // Customize error message based on type
+            if (errorMessage.includes('event')) {
+                errorIcon = 'warning';
+                errorTitle = 'Lapangan Sedang Ada Event';
+                additionalInfo = `
+                    <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p class="text-sm text-gray-700">
+                            <i class="fas fa-trophy text-yellow-600 mr-2"></i>
+                            <strong>Saran:</strong> Silakan pilih tanggal atau lapangan lain yang tersedia
+                        </p>
+                    </div>
+                `;
+            } else if (errorMessage.includes('tidak tersedia') || errorMessage.includes('Slot waktu')) {
+                errorIcon = 'warning';
+                errorTitle = 'Waktu Tidak Tersedia';
+                additionalInfo = `
+                    <div class="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                        <p class="text-sm text-gray-700">
+                            <i class="fas fa-calendar-times text-orange-600 mr-2"></i>
+                            <strong>Saran:</strong> Waktu yang dipilih sudah dibooking. Silakan pilih waktu lain
+                        </p>
+                    </div>
+                `;
+            } else if (status === 500) {
+                errorTitle = 'Kesalahan Server';
+                additionalInfo = `
+                    <div class="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <p class="text-sm text-gray-700">
+                            <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                            Terjadi kesalahan sistem. Silakan coba lagi atau hubungi administrator
+                        </p>
+                    </div>
+                `;
+            }
+            
             Swal.fire({
-                icon: 'error',
-                title: 'Gagal!',
-                text: data.message || 'Terjadi kesalahan saat membuat booking',
-                confirmButtonColor: '#d33'
+                icon: errorIcon,
+                title: `<strong class="text-red-600">${errorTitle}</strong>`,
+                html: `
+                    <div class="text-left space-y-2">
+                        <div class="bg-red-50 p-3 rounded-lg border border-red-200">
+                            <p class="text-gray-800">${errorMessage}</p>
+                        </div>
+                        ${additionalInfo}
+                    </div>
+                `,
+                confirmButtonText: '<i class="fas fa-redo mr-2"></i>Coba Lagi',
+                confirmButtonColor: '#dc2626',
+                showCancelButton: true,
+                cancelButtonText: 'Tutup',
+                cancelButtonColor: '#6b7280',
+                width: '600px',
+                customClass: {
+                    confirmButton: 'px-6 py-2 rounded-lg',
+                    cancelButton: 'px-6 py-2 rounded-lg'
+                }
             });
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        
+        // NETWORK ERROR or UNEXPECTED ERROR
         Swal.fire({
             icon: 'error',
-            title: 'Error!',
-            text: 'Terjadi kesalahan sistem',
-            confirmButtonColor: '#d33'
+            title: '<strong class="text-red-600">Kesalahan Jaringan</strong>',
+            html: `
+                <div class="text-left space-y-3">
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <p class="text-gray-800 mb-2">
+                            <i class="fas fa-wifi-slash text-red-600 mr-2"></i>
+                            Tidak dapat terhubung ke server
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            Error: ${error.message}
+                        </p>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <p class="text-sm text-gray-700">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                            <strong>Troubleshooting:</strong>
+                        </p>
+                        <ul class="text-sm text-gray-600 ml-6 mt-2 list-disc space-y-1">
+                            <li>Periksa koneksi internet Anda</li>
+                            <li>Refresh halaman dan coba lagi</li>
+                            <li>Hubungi administrator jika masalah berlanjut</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            confirmButtonText: '<i class="fas fa-sync-alt mr-2"></i>Refresh Halaman',
+            confirmButtonColor: '#2563eb',
+            showCancelButton: true,
+            cancelButtonText: 'Tutup',
+            cancelButtonColor: '#6b7280',
+            width: '600px'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                location.reload();
+            }
         });
     })
     .finally(() => {
+        // Restore button state
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     });

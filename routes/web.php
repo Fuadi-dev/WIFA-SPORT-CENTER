@@ -62,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/courts-by-sport/{sport}', [ManagementBookingController::class, 'getCourtsBySport'])->name('courts-by-sport');
                 Route::get('/{booking:slug}', [ManagementBookingController::class, 'show'])->name('show');
                 Route::patch('/{booking:slug}/confirm', [ManagementBookingController::class, 'confirmBooking'])->name('confirm');
+                Route::patch('/{booking:slug}/cancel', [ManagementBookingController::class, 'cancelBooking'])->name('cancel');
                 Route::patch('/{booking:slug}/status', [ManagementBookingController::class, 'updateStatus'])->name('updateStatus');
                 Route::delete('/{booking:slug}', [ManagementBookingController::class, 'destroy'])->name('destroy');
                 Route::get('/export/data', [ManagementBookingController::class, 'export'])->name('export');

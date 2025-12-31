@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Court extends Model
 {
@@ -20,7 +21,7 @@ class Court extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
     public function sport()
@@ -195,5 +196,32 @@ class Court extends Model
             ->where('id', '!=', $this->id)
             ->with('sport')
             ->get();
+    }
+
+    /**
+     * Get price for a specific date and time
+     * Delegates to Sport model which has the price settings
+     * 
+     * @param string|Carbon $date
+     * @param string $time Format H:i or H:i:s
+     * @return float
+     */
+    public function getPriceForDateTime($date, string $time): float
+    {
+        return $this->sport->getPriceForDateTime($date, $time);
+    }
+
+    /**
+     * Calculate total price for booking
+     * Delegates to Sport model
+     * 
+     * @param string|Carbon $date
+     * @param string $startTime
+     * @param string $endTime
+     * @return float
+     */
+    public function calculateBookingPrice($date, string $startTime, string $endTime): float
+    {
+        return $this->sport->calculateBookingPrice($date, $startTime, $endTime);
     }
 }

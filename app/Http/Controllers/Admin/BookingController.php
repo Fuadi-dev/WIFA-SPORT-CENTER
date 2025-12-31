@@ -154,6 +154,32 @@ class BookingController extends Controller
         return redirect()->route('admin.bookings.show', $booking)
             ->with('success', "Status booking berhasil diubah dari '{$oldStatus}' menjadi '{$request->status}'");
     }
+
+    public function cancelBooking(Booking $booking)
+    {
+        // Check if booking can be cancelled (before start time)
+        $bookingDate = Carbon::parse($booking->booking_date);
+        $bookingDateTime = $bookingDate->setTimeFromTimeString($booking->start_time);
+        
+        // Harus sebelum waktu mulai booking
+        if (!$bookingDateTime->isFuture()) {
+            return redirect()->back()->with('error', 'Tidak dapat membatalkan booking. Pembatalan hanya dapat dilakukan sebelum waktu mulai booking.');
+        }
+        
+        // Don't allow cancelling if already cancelled or completed
+        if (in_array($booking->status, ['cancelled', 'completed'])) {
+            return redirect()->back()->with('error', 'Booking dengan status ' . $booking->status . ' tidak dapat dibatalkan.');
+        }
+        
+        $oldStatus = $booking->status;
+        $booking->status = 'cancelled';
+        $booking->admin_notes = ($booking->admin_notes ? $booking->admin_notes . "\n\n" : '') 
+            . 'Dibatalkan manual oleh admin: ' . Auth::user()->name . ' pada ' . now()->format('Y-m-d H:i:s') 
+            . ' (Status sebelumnya: ' . $oldStatus . ')';
+        $booking->save();
+        
+        return redirect()->back()->with('success', "Booking {$booking->booking_code} berhasil dibatalkan");
+    }
     
     public function storeManualBooking(Request $request)
     {
@@ -190,25 +216,82 @@ class BookingController extends Controller
                 ]);
             }
 
+            $sport = Sport::findOrFail($request->sport_id);
+            $court = Court::findOrFail($request->court_id);
+
+            // === BUG FIX 1: CHECK AVAILABILITY BEFORE BOOKING ===
+            // Check for events first
+            $event = $court->getEventForDate($request->date);
+            if ($event) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Lapangan tidak tersedia pada tanggal tersebut karena ada event: {$event->title} ({$event->event_code})"
+                ], 400);
+            }
+            
+            // Check if time slot is available
+            if (!$court->isAvailable($request->date, $request->start_time, $request->end_time)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Slot waktu sudah tidak tersedia. Ada booking lain pada waktu tersebut.'
+                ], 400);
+            }
+
             // Calculate duration and price
             $startTime = Carbon::createFromFormat('H:i', $request->start_time);
             $endTime = Carbon::createFromFormat('H:i', $request->end_time);
             $duration = $endTime->diffInHours($startTime);
 
-            $sport = Sport::findOrFail($request->sport_id);
-            $court = Court::findOrFail($request->court_id);
-
             // Check if date is weekend
             $bookingDate = Carbon::parse($request->date);
             $isWeekend = in_array($bookingDate->dayOfWeek, [0, 5, 6]); // Friday, Saturday, Sunday
 
-            $pricePerHour = $isWeekend ? $court->weekend_price : $court->weekday_price;
-            $totalPrice = $pricePerHour * $duration;
+            // === BUG FIX 2: CALCULATE TOTAL PRICE PROPERLY ===
+            // Use time-based pricing (morning, afternoon, evening)
+            $totalPrice = 0;
+            $originalPrice = 0;
+            
+            for ($hour = $startTime->hour; $hour < $endTime->hour; $hour++) {
+                $hourPrice = 0;
+                
+                // Determine price category based on time
+                if ($hour >= 8 && $hour < 12) {
+                    // Morning: 08:00-12:00
+                    if ($sport->name === 'Futsal' || $sport->name === 'Basket') {
+                        $hourPrice = $isWeekend ? 65000 : 60000;
+                    } elseif ($sport->name === 'Badminton') {
+                        $hourPrice = $isWeekend ? 35000 : 30000;
+                    } elseif ($sport->name === 'Voli' || $sport->name === 'Volleyball') {
+                        $hourPrice = $isWeekend ? 55000 : 50000;
+                    }
+                } elseif ($hour >= 12 && $hour < 18) {
+                    // Afternoon: 12:00-18:00
+                    if ($sport->name === 'Futsal' || $sport->name === 'Basket') {
+                        $hourPrice = $isWeekend ? 85000 : 80000;
+                    } elseif ($sport->name === 'Badminton') {
+                        $hourPrice = $isWeekend ? 40000 : 35000;
+                    } elseif ($sport->name === 'Voli' || $sport->name === 'Volleyball') {
+                        $hourPrice = $isWeekend ? 65000 : 60000;
+                    }
+                } else {
+                    // Evening: 18:00-24:00
+                    if ($sport->name === 'Futsal' || $sport->name === 'Basket') {
+                        $hourPrice = $isWeekend ? 105000 : 100000;
+                    } elseif ($sport->name === 'Badminton') {
+                        $hourPrice = $isWeekend ? 45000 : 40000;
+                    } elseif ($sport->name === 'Voli' || $sport->name === 'Volleyball') {
+                        $hourPrice = $isWeekend ? 75000 : 70000;
+                    }
+                }
+                
+                $totalPrice += $hourPrice;
+                $originalPrice += $hourPrice;
+            }
 
             // Generate unique booking code
             $bookingCode = Str::random(10);
 
-            // Create booking
+            // Create booking with proper price fields
             $booking = Booking::create([
                 'booking_code' => 'WIFA-' . $bookingCode,
                 'user_id' => $user->id,
@@ -220,13 +303,14 @@ class BookingController extends Controller
                 'booking_date' => $request->date,
                 'start_time' => $request->start_time,
                 'end_time' => $request->end_time,
-                'duration' => $duration,
-                'price_per_hour' => $pricePerHour,
+                'original_price' => $originalPrice,
+                'discount_amount' => 0,
                 'total_price' => $totalPrice,
                 'payment_method' => 'cash',
                 'status' => 'confirmed', // Manual booking langsung confirmed
+                'confirmed_at' => now(),
                 'notes' => $request->notes,
-                'admin_notes' => 'Booking manual oleh admin: ' . Auth::user()->name,
+                'admin_notes' => 'Booking manual oleh admin: ' . Auth::user()->name . ' pada ' . now()->format('Y-m-d H:i:s'),
             ]);
 
             return response()->json([

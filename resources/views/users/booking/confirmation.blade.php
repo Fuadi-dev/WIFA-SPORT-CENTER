@@ -9,7 +9,7 @@
     
     <!-- Midtrans Snap.js -->
     @if($booking->payment_method === 'midtrans')
-        <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
+        <script type="text/javascript" src="{{ config('midtrans.snap_script_url') }}" data-client-key="{{ config('midtrans.client_key') }}"></script>
     @endif
 </head>
 <body class="bg-gradient-to-br from-amber-50 to-orange-100 min-h-screen">

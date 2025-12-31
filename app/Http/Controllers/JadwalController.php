@@ -7,6 +7,7 @@ use App\Models\Court;
 use App\Models\Booking;
 use App\Models\Sport;
 use App\Models\Event;
+use App\Models\SportPrice;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -54,7 +55,7 @@ class JadwalController extends Controller
     private function getTimeSlotsForDate($court, $date)
     {
         $carbonDate = Carbon::parse($date);
-        $isWeekend = $carbonDate->isWeekend();
+        $isWeekend = SportPrice::isWeekend($carbonDate); // Jumat-Minggu = Weekend
         $timeSlots = [];
         
         // Check if there's an event on this date
@@ -102,8 +103,8 @@ class JadwalController extends Controller
             $startTime = sprintf('%02d:00', $hour);
             $endTime = sprintf('%02d:00', $hour + 1);
             
-            // Get price based on time and day
-            $priceInfo = $this->getPriceForTimeSlot($hour, $isWeekend);
+            // Get price based on time, day, and sport from database
+            $priceInfo = $this->getPriceForTimeSlot($court->sport, $hour, $isWeekend);
             
             // Check if this time slot is available
             $isBooked = $this->isTimeSlotBooked($court->id, $date, $startTime, $endTime);
@@ -129,35 +130,45 @@ class JadwalController extends Controller
         return $timeSlots;
     }
     
-    private function getPriceForTimeSlot($hour, $isWeekend = false)
+    private function getPriceForTimeSlot($sport, $hour, $isWeekend = false)
     {
-        $basePrice = 0;
-        $category = '';
+        // Determine time slot based on hour
+        $timeSlot = '';
         $label = '';
         
         if ($hour >= 8 && $hour < 12) {
-            $basePrice = 60000;
-            $category = 'morning';
+            $timeSlot = SportPrice::SLOT_MORNING;
             $label = 'Pagi';
         } elseif ($hour >= 12 && $hour < 18) {
-            $basePrice = 80000;
-            $category = 'afternoon';
+            $timeSlot = SportPrice::SLOT_AFTERNOON;
             $label = 'Siang';
         } else {
-            $basePrice = 100000;
-            $category = 'evening';
+            $timeSlot = SportPrice::SLOT_EVENING;
             $label = 'Malam';
         }
         
-        // Weekend pricing (add 20%)
+        // Get price from database
+        $sportPrice = SportPrice::where('sport_id', $sport->id)
+            ->where('time_slot', $timeSlot)
+            ->where('is_active', true)
+            ->first();
+        
+        $price = 0;
+        if ($sportPrice) {
+            $price = $isWeekend ? $sportPrice->weekend_price : $sportPrice->weekday_price;
+        } else {
+            // Fallback to sport's default price_per_hour if no specific pricing exists
+            $price = $sport->price_per_hour ?? 0;
+        }
+        
+        // Add weekend label
         if ($isWeekend) {
-            $basePrice = $basePrice * 1.2;
             $label .= ' (Weekend)';
         }
         
         return [
-            'price' => $basePrice,
-            'category' => $category,
+            'price' => (float) $price,
+            'category' => $timeSlot,
             'label' => $label
         ];
     }

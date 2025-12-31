@@ -206,6 +206,26 @@
                     </a>
                 @endif
                 
+                <!-- Cancel Booking - Only before start time and not already cancelled/completed -->
+                @php
+                    $bookingDate = \Carbon\Carbon::parse($booking->booking_date);
+                    $bookingDateTime = $bookingDate->setTimeFromTimeString($booking->start_time);
+                    $canCancel = $bookingDateTime->isFuture() && !in_array($booking->status, ['cancelled', 'completed']);
+                @endphp
+                
+                @if($canCancel)
+                    <button onclick="confirmCancelBooking('{{ $booking->slug }}', '{{ $booking->booking_code }}')" 
+                            class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                        <i class="fas fa-ban mr-2"></i>Batalkan Booking
+                    </button>
+                @else
+                    @if(!in_array($booking->status, ['cancelled', 'completed']))
+                        <div class="w-full px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed text-center">
+                            <i class="fas fa-ban mr-2"></i>Tidak Dapat Dibatalkan (Sudah Lewat Waktu)
+                        </div>
+                    @endif
+                @endif
+                
                 <!-- Print/Download -->
                 <button onclick="window.print()" 
                         class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -267,6 +287,36 @@
 
 <!-- Include delete modal -->
 @include('admin.bookings.partials.delete-modal')
+
+<!-- Cancel Booking Modal -->
+<div id="cancelBookingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Konfirmasi Pembatalan</h3>
+                <button onclick="closeCancelBookingModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <p class="text-gray-600 mb-6">Apakah Anda yakin ingin membatalkan booking <span id="cancelBookingCode" class="font-semibold"></span>? Status akan diubah menjadi "Cancelled".</p>
+            
+            <form id="cancelBookingForm" method="POST">
+                @csrf
+                @method('PATCH')
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeCancelBookingModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
+                        <i class="fas fa-ban mr-1"></i> Batalkan Booking
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- Edit Status Modal -->
 <div id="editStatusModal" class="fixed inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm z-50 hidden">
@@ -339,6 +389,16 @@
         document.getElementById('deleteModal').classList.add('hidden');
     }
     
+    function confirmCancelBooking(bookingSlug, bookingCode) {
+        document.getElementById('cancelBookingModal').classList.remove('hidden');
+        document.getElementById('cancelBookingForm').action = `/admin/bookings/${bookingSlug}/cancel`;
+        document.getElementById('cancelBookingCode').textContent = bookingCode;
+    }
+    
+    function closeCancelBookingModal() {
+        document.getElementById('cancelBookingModal').classList.add('hidden');
+    }
+    
     function openEditStatusModal() {
         document.getElementById('editStatusModal').classList.remove('hidden');
     }
@@ -351,6 +411,12 @@
     document.getElementById('deleteModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeDeleteModal();
+        }
+    });
+    
+    document.getElementById('cancelBookingModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCancelBookingModal();
         }
     });
     

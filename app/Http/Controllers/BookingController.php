@@ -485,6 +485,20 @@ class BookingController extends Controller
             'discount_amount' => 'nullable|numeric|min:0'
         ]);
 
+        // VALIDASI: Booking tidak bisa dilakukan jika waktu sudah lewat
+        $bookingDate = Carbon::parse($request->date);
+        $bookingDateTime = Carbon::parse($request->date . ' ' . $request->start_time);
+        
+        // Check if booking time has passed
+        if ($bookingDateTime->isPast()) {
+            return back()->withErrors([
+                'error' => 'Waktu booking sudah lewat. ' .
+                          'Waktu mulai: ' . $bookingDateTime->format('H:i') . ', ' .
+                          'Sekarang: ' . now()->format('H:i') . '. ' .
+                          'Silakan pilih waktu lain atau hubungi admin untuk bantuan.'
+            ])->withInput();
+        }
+
         // Double check availability
         $court = Court::findOrFail($request->court_id);
         
@@ -528,9 +542,17 @@ class BookingController extends Controller
         // Calculate final price
         $totalPrice = $originalPrice - $discountAmount;
 
-        // Determine initial status based on payment method
+        // SPECIAL HANDLING: Booking hari ini dengan CASH langsung confirmed
         $initialStatus = $request->payment_method === 'cash' ? 'pending_confirmation' : 'pending_payment';
-        $confirmedAt = $request->payment_method === 'cash' ? now() : null;
+        $confirmedAt = null;
+        
+        if ($bookingDate->isToday() && $request->payment_method === 'cash') {
+            $initialStatus = 'confirmed';
+            $confirmedAt = now();
+        } elseif ($request->payment_method === 'cash') {
+            $confirmedAt = now();
+        }
+        
         $bookingCode = Str::random(10);
 
         // Create booking
